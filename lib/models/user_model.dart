@@ -1,13 +1,20 @@
-// lib/models/user_model.dart
-
 class User {
-  final String? id;
-  final String name;
+  final int id;
+  final String namaLengkap;
   final String email;
 
   User({
-    this.id,
-    required this.name,
+    required this.id,
+    required this.namaLengkap,
     required this.email,
   });
+
+  // Factory constructor untuk membuat instance User dari map (JSON)
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: int.parse(json['id'].toString()), // Konversi ke int dengan aman
+      namaLengkap: json['nama_lengkap'],
+      email: json['email'],
+    );
+  }
 }

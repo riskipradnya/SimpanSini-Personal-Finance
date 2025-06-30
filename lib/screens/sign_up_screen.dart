@@ -3,6 +3,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../database/auth_service.dart'; // <-- IMPORT AuthService
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -12,7 +13,75 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  // Controller untuk mengambil data dari TextField
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  
+  // State untuk loading dan visibilitas password
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    // Hapus controller saat widget tidak digunakan untuk menghindari memory leak
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Fungsi untuk menangani proses registrasi
+  Future<void> _handleSignUp() async {
+    // Validasi sederhana, pastikan tidak ada field yang kosong
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua kolom wajib diisi.')),
+      );
+      return;
+    }
+
+    // Mulai proses loading
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Panggil fungsi signUp dari AuthService
+      var result = await AuthService().signUp(
+        _nameController.text,
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      // Cek apakah widget masih terpasang sebelum menampilkan UI
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
+        // Jika registrasi berhasil, kembali ke halaman login
+        if (result['status'] == 'success') {
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      // Tangani error jika terjadi masalah koneksi atau lainnya
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
+        );
+      }
+    } finally {
+      // Hentikan proses loading, apapun hasilnya
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +108,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: const Icon(Icons.arrow_back, color: Colors.black),
           ),
           onPressed: () {
-            // Kembali ke halaman sebelumnya
             Navigator.of(context).pop();
           },
         ),
@@ -69,17 +137,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
-              // Full Name Field
-              _buildTextField(label: 'Full Name', hint: 'Enter your name'),
-              const SizedBox(height: 20),
-              // Email Field
+              
+              // Hubungkan TextField dengan Controller
               _buildTextField(
+                controller: _nameController,
+                label: 'Full Name',
+                hint: 'Enter your name',
+              ),
+              const SizedBox(height: 20),
+              _buildTextField(
+                controller: _emailController,
                 label: 'Email Address',
                 hint: 'Enter your email address',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
-              // Password Field
+              
               Text(
                 'Password',
                 style: TextStyle(
@@ -90,6 +163,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: _passwordController,
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Enter your password',
@@ -128,14 +202,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              // Create Account Button
+              
+              // Panggil fungsi _handleSignUp saat tombol ditekan
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Nantinya, di sini Anda akan memanggil logika dari AuthService
-                    // Contoh: AuthService().signUpWithEmailAndPassword(...)
-                  },
+                  onPressed: _isLoading ? null : _handleSignUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -145,18 +217,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     elevation: 5,
                     shadowColor: const Color(0xFF1A237E).withOpacity(0.4),
                   ),
-                  child: const Text(
-                    'Create An Account',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : const Text(
+                          'Create An Account',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 30),
-              // Or Sign Up with
+              
+              // Sisa UI tidak berubah
               Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey[300])),
@@ -171,7 +253,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-              // Social Media Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -183,7 +264,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-              // Terms and Conditions
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: RichText(
@@ -204,7 +284,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            // Aksi ketika teks Syarat & Ketentuan diklik
                             print('Terms and Conditions tapped');
                           },
                       ),
@@ -219,8 +298,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // Helper widget untuk text field yang umum
   Widget _buildTextField({
+    required TextEditingController controller,
     required String label,
     required String hint,
     TextInputType keyboardType = TextInputType.text,
@@ -238,6 +317,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         const SizedBox(height: 8),
         TextField(
+          controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,

@@ -1,41 +1,47 @@
-// lib/database/auth_service.dart
-
-import '../models/user_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class AuthService {
+  // Ganti URL ini saat Anda sudah hosting
+  // Untuk tes lokal, ganti dengan IP Address komputer Anda
+  final String _baseUrl = "http://localhost/api_keuangan"; // <-- GANTI DENGAN IP ANDA
 
-  // Contoh fungsi untuk sign in
-  Future<User?> signInWithEmailAndPassword(String email, String password) async {
-    try {
-      // Di sini Anda akan menambahkan logika untuk sign in
-      // Misalnya, memanggil API atau Firebase Authentication
-      print('Attempting to sign in with $email...');
+  // Fungsi untuk Registrasi (CREATE)
+  Future<Map<String, dynamic>> signUp(String name, String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/register.php'),
+      body: {
+        'nama_lengkap': name,
+        'email': email,
+        'password': password,
+      },
+    );
 
-      // Jika berhasil, kembalikan data user
-      // Ini hanya data dummy
-      await Future.delayed(const Duration(seconds: 2)); // simulasi network request
-      return User(id: '123', name: 'Contoh User', email: email);
-
-    } catch (e) {
-      // Tangani error, misalnya email salah atau password salah
-      print(e.toString());
-      return null;
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return {'status': 'error', 'message': 'Gagal terhubung ke server.'};
     }
   }
 
-  // Contoh fungsi untuk sign up
-  Future<User?> signUpWithEmailAndPassword(String name, String email, String password) async {
-     try {
-      // Di sini Anda akan menambahkan logika untuk membuat akun baru
-      print('Attempting to sign up with $email...');
-      await Future.delayed(const Duration(seconds: 2)); // simulasi network request
-      return User(id: '456', name: name, email: email);
-
-    } catch (e) {
-      print(e.toString());
-      return null;
+  // Fungsi untuk Login (READ)
+  Future<Map<String, dynamic>> signIn(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/login.php'),
+      body: {
+        'email': email,
+        'password': password,
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return {'status': 'error', 'message': 'Gagal terhubung ke server.'};
     }
   }
 
-  // Fungsi lain seperti sign out, forgot password, dll. bisa ditambahkan di sini
+  // Nanti Anda bisa menambahkan fungsi update dan delete di sini
+  // Future<Map<String, dynamic>> updateUser(...) async { ... }
+  // Future<Map<String, dynamic>> deleteUser(...) async { ... }
 }
