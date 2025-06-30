@@ -25,27 +25,7 @@ class _SignInScreenState extends State<SignInScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.arrow_back, color: Colors.black),
-          ),
-          onPressed: () {
-            // Aksi ketika tombol kembali ditekan
-          },
-        ),
+
         title: const Text(
           'Sign In',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -200,7 +180,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                      // NANTINYA, LOGIKA SIGN IN AKAN MEMANGGIL FUNGSI DARI auth_service.dart
+                    // NANTINYA, LOGIKA SIGN IN AKAN MEMANGGIL FUNGSI DARI auth_service.dart
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E), // Warna biru tua
