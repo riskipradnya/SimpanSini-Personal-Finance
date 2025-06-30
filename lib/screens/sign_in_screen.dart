@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'sign_up_screen.dart'; // <-- PATH IMPORT DIPERBARUI
+import '../database/auth_service.dart'; // <-- IMPORT AuthService
+import 'sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -12,12 +13,80 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
+  // Controller untuk mengambil data dari TextField
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  // State untuk loading dan fitur UI lainnya
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  bool _isLoading = false;
 
-  // ... (Sisa kode sama persis dengan file login.dart Anda)
-  // Tidak ada perubahan pada method build() dan _socialButton()
-  // Salin dan tempel semua kode dari kelas _SignInScreenState di sini
+  @override
+  void dispose() {
+    // Hapus controller saat widget tidak digunakan
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Fungsi untuk menangani proses login
+  Future<void> _handleSignIn() async {
+    // Validasi sederhana
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email dan password wajib diisi.')),
+      );
+      return;
+    }
+
+    // Mulai proses loading
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Panggil fungsi signIn dari AuthService
+      var result = await AuthService().signIn(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      // Cek apakah widget masih terpasang
+      if (mounted) {
+        if (result['status'] == 'success') {
+          // Jika login berhasil
+          final userName = result['data']['nama_lengkap'];
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Login berhasil! Selamat datang, $userName')),
+          );
+          // TODO: Navigasi ke halaman utama (home screen) aplikasi Anda
+          // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomeScreen()));
+        } else {
+          // Jika login gagal, tampilkan pesan error dari server
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'])),
+          );
+        }
+      }
+    } catch (e) {
+      // Tangani error koneksi atau lainnya
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
+        );
+      }
+    } finally {
+      // Hentikan proses loading, apapun hasilnya
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,9 +111,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
             child: const Icon(Icons.arrow_back, color: Colors.black),
           ),
-          onPressed: () {
-            // Aksi ketika tombol kembali ditekan
-          },
+          onPressed: () {},
         ),
         title: const Text(
           'Sign In',
@@ -72,7 +139,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
-              // Email Field
+              
               Text(
                 'Email Address',
                 style: TextStyle(
@@ -83,6 +150,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: _emailController, // Hubungkan controller
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: 'Enter your email address',
@@ -108,7 +176,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Password Field
+              
               Text(
                 'Password',
                 style: TextStyle(
@@ -119,6 +187,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: _passwordController, // Hubungkan controller
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Enter your password',
@@ -157,7 +226,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              // Remember Me & Forgot Password
+              
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -195,15 +264,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 ],
               ),
               const SizedBox(height: 25),
-              // Sign In Button
+              
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                      // NANTINYA, LOGIKA SIGN IN AKAN MEMANGGIL FUNGSI DARI auth_service.dart
-                  },
+                  onPressed: _isLoading ? null : _handleSignIn, // Panggil fungsi login
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E), // Warna biru tua
+                    backgroundColor: const Color(0xFF1A237E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -211,18 +278,28 @@ class _SignInScreenState extends State<SignInScreen> {
                     elevation: 5,
                     shadowColor: const Color(0xFF1A237E).withOpacity(0.4),
                   ),
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 30),
-              // Don't have an account? Sign Up
+              
+              // Sisa UI tidak berubah
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -251,7 +328,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-              // Or Sign In with
               Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey[300])),
@@ -266,7 +342,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-              // Social Media Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
