@@ -1,19 +1,18 @@
-// lib/login.dart
+// lib/signup.dart
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'signup.dart'; // <-- PENYEBAB ERROR: BARIS INI HILANG. SEKARANG SUDAH DITAMBAHKAN.
 
-class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false;
-  bool _rememberMe = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +39,12 @@ class _SignInScreenState extends State<SignInScreen> {
             child: const Icon(Icons.arrow_back, color: Colors.black),
           ),
           onPressed: () {
-            // Aksi ketika tombol kembali ditekan
+            // Kembali ke halaman sebelumnya
+            Navigator.of(context).pop();
           },
         ),
         title: const Text(
-          'Sign In',
+          'Sign Up',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -56,7 +56,7 @@ class _SignInScreenState extends State<SignInScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hi, Welcome Back! 👋',
+                'Create Account',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -69,40 +69,14 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
+              // Full Name Field
+              _buildTextField(label: 'Full Name', hint: 'Enter your name'),
+              const SizedBox(height: 20),
               // Email Field
-              Text(
-                'Email Address',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
+              _buildTextField(
+                label: 'Email Address',
+                hint: 'Enter your email address',
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Enter your email address',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 15.0,
-                    horizontal: 20.0,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF1A237E)),
-                  ),
-                ),
               ),
               const SizedBox(height: 20),
               // Password Field
@@ -153,52 +127,14 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 15),
-              // Remember Me & Forgot Password
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _rememberMe,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _rememberMe = value!;
-                          });
-                        },
-                        activeColor: const Color(0xFF1A237E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const Text(
-                        'Remember Me',
-                        style: TextStyle(fontSize: 14, color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      'Forgot Password',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF1A237E),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 25),
-              // Sign In Button
+              const SizedBox(height: 30),
+              // Create Account Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E), // Warna biru tua
+                    backgroundColor: const Color(0xFF1A237E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -207,7 +143,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     shadowColor: const Color(0xFF1A237E).withOpacity(0.4),
                   ),
                   child: const Text(
-                    'Sign In',
+                    'Create An Account',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -217,48 +153,14 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              // Don't have an account? Sign Up
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account? ",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignUpScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: Color.fromRGBO(
-                          20,
-                          31,
-                          97,
-                          1,
-                        ), // <-- KODE WARNA INI JUGA DIPERBAIKI
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              // Or Sign In with
+              // Or Sign Up with
               Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey[300])),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10.0),
                     child: Text(
-                      'Or Sign In with',
+                      'Or Sign Up with',
                       style: TextStyle(color: Colors.grey[500], fontSize: 14),
                     ),
                   ),
@@ -277,10 +179,88 @@ class _SignInScreenState extends State<SignInScreen> {
                   _socialButton(FontAwesomeIcons.facebookF, onPressed: () {}),
                 ],
               ),
+              const SizedBox(height: 30),
+              // Terms and Conditions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(text: 'By signing up you agree to our '),
+                      TextSpan(
+                        text: 'Terms\nand Conditions of Use',
+                        style: const TextStyle(
+                          color: Color(0xFF1A237E),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        recognizer:
+                            TapGestureRecognizer()
+                              ..onTap = () {
+                                // Aksi ketika teks Syarat & Ketentuan diklik
+                                print('Terms and Conditions tapped');
+                              },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Helper widget untuk text field yang umum
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 15.0,
+              horizontal: 20.0,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF1A237E)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
