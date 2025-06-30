@@ -1,7 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'login.dart'; // Import file login.dart yang baru dibuat
+import 'screens/sign_in_screen.dart'; // <-- Path import diperbarui (tanpa ../)
 
 void main() {
   runApp(const MyApp());
@@ -17,9 +17,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Poppins', // Pastikan Anda memiliki font ini atau ganti
+        fontFamily: 'Poppins',
       ),
-      // Panggil screen dari file login.dart
       home: const SignInScreen(),
       debugShowCheckedModeBanner: false,
     );
