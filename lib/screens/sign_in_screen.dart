@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../database/auth_service.dart'; // <-- IMPORT AuthService
+import '../database/auth_service.dart';
 import 'sign_up_screen.dart';
+import 'home_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -62,8 +63,10 @@ class _SignInScreenState extends State<SignInScreen> {
               content: Text('Login berhasil! Selamat datang, $userName'),
             ),
           );
-          // TODO: Navigasi ke halaman utama (home screen) aplikasi Anda
-          // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomeScreen()));
+          // Navigasi ke halaman HomeScreen setelah login berhasil
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
         } else {
           // Jika login gagal, tampilkan pesan error dari server
           ScaffoldMessenger.of(
@@ -95,7 +98,6 @@ class _SignInScreenState extends State<SignInScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
@@ -141,7 +143,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
-
               Text(
                 'Email Address',
                 style: TextStyle(
@@ -178,7 +179,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               Text(
                 'Password',
                 style: TextStyle(
@@ -228,7 +228,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -265,12 +264,10 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ],
               ),
-                            const SizedBox(height: 25),
-
+              const SizedBox(height: 25),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  // HANYA GUNAKAN onPressed YANG INI
                   onPressed: _isLoading ? null : _handleSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E),
@@ -300,11 +297,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                 ),
               ),
-
               const SizedBox(height: 30),
-
-
-              // Sisa UI tidak berubah
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
