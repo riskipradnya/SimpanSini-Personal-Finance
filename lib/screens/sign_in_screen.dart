@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../database/auth_service.dart'; // <-- IMPORT AuthService
+import '../database/auth_service.dart';
 import 'sign_up_screen.dart';
+import 'home_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -58,15 +59,19 @@ class _SignInScreenState extends State<SignInScreen> {
           // Jika login berhasil
           final userName = result['data']['nama_lengkap'];
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login berhasil! Selamat datang, $userName')),
+            SnackBar(
+              content: Text('Login berhasil! Selamat datang, $userName'),
+            ),
           );
-          // TODO: Navigasi ke halaman utama (home screen) aplikasi Anda
-          // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomeScreen()));
+          // Navigasi ke halaman HomeScreen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
         } else {
           // Jika login gagal, tampilkan pesan error dari server
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'])),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(result['message'])));
         }
       }
     } catch (e) {
@@ -85,7 +90,6 @@ class _SignInScreenState extends State<SignInScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +143,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
-              
+
               Text(
                 'Email Address',
                 style: TextStyle(
@@ -176,7 +180,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               Text(
                 'Password',
                 style: TextStyle(
@@ -226,7 +230,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -264,11 +268,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 ],
               ),
               const SizedBox(height: 25),
-              
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSignIn, // Panggil fungsi login
+                  onPressed: _isLoading
+                      ? null
+                      : _handleSignIn, // Panggil fungsi login
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -298,8 +304,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              
-              // Sisa UI tidak berubah
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
