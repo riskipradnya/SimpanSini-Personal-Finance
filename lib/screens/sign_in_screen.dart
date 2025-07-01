@@ -265,17 +265,13 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 25),
+                            const SizedBox(height: 25),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // NANTINYA, LOGIKA SIGN IN AKAN MEMANGGIL FUNGSI DARI auth_service.dart
-                  },
-                  onPressed: _isLoading
-                      ? null
-                      : _handleSignIn, // Panggil fungsi login
+                  // HANYA GUNAKAN onPressed YANG INI
+                  onPressed: _isLoading ? null : _handleSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -304,7 +300,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                 ),
               ),
+
               const SizedBox(height: 30),
+
 
               // Sisa UI tidak berubah
               Row(
