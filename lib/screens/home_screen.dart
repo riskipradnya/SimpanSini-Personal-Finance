@@ -1,5 +1,4 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,9 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFF1C1C1E,
-      ), // Background gelap sesuai desain
+      backgroundColor: Colors.white, // Changed to white background
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -50,7 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _buildBottomAppBar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFF2C2C4E),
+        backgroundColor: const Color(
+          0xFF1A237E,
+        ), // Changed to match app's primary color
         child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -73,12 +72,13 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               'Welcome back',
-              style: GoogleFonts.manrope(color: Colors.grey[400], fontSize: 14),
+              style: GoogleFonts.manrope(color: Colors.grey[600], fontSize: 14),
             ),
             Text(
               'Gung Riski',
               style: GoogleFonts.manrope(
-                color: Colors.white,
+                color: Colors
+                    .black87, // Changed to dark color for white background
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -89,12 +89,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.grey[200], // Lighter background for white theme
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            CupertinoIcons.bell_fill,
-            color: Colors.white,
+          child: Icon(
+            Icons.notifications, // DIGANTI: dari CupertinoIcons.bell_fill
+            color: Colors.grey[800], // Darker icon for white background
             size: 24,
           ),
         ),
@@ -109,12 +109,16 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.show_chart, color: Colors.white, size: 28),
+            Icon(
+              Icons.show_chart,
+              color: Colors.grey[800],
+              size: 28,
+            ), // Darker icon
             const SizedBox(width: 10),
             Text(
               'Pemasukan dan Pengeluaran',
               style: GoogleFonts.manrope(
-                color: Colors.white,
+                color: Colors.black87, // Changed to dark color
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -122,10 +126,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 20),
-        SizedBox(
-          height: 200,
-          child: LineChart(
-            mainData(), // Memanggil data chart dari fungsi di bawah
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            height: 200,
+            child: LineChart(
+              mainData(), // Memanggil data chart dari fungsi di bawah
+            ),
           ),
         ),
       ],
@@ -139,7 +158,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Text(
           'Minim dolor in amet nulla laboris enim dolore consequatt.',
-          style: GoogleFonts.manrope(color: Colors.grey[400], fontSize: 14),
+          style: GoogleFonts.manrope(
+            color: Colors.grey[600],
+            fontSize: 14,
+          ), // Lighter gray
         ),
         const SizedBox(height: 20),
         Row(
@@ -165,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           text,
           style: GoogleFonts.manrope(
-            color: Colors.white,
+            color: Colors.black87, // Changed to dark color
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -184,22 +206,19 @@ class _HomeScreenState extends State<HomeScreen> {
       mainAxisSpacing: 15,
       childAspectRatio: 1.2,
       children: [
+        // KARTU-KARTU TELAH DIGANTI SESUAI PERMINTAAN
         _actionCard(
-          CupertinoIcons.paperplane_fill,
-          'Send money',
-          'Take acc to acc',
+          Icons.account_balance_wallet_outlined,
+          'Budgeting',
+          'Alokasi dana bulanan',
         ),
+        _actionCard(Icons.analytics_outlined, 'Laporan', 'Laporan keuangan'),
         _actionCard(
-          CupertinoIcons.creditcard_fill,
-          'Pay the bill',
-          'Lorem ipsum',
+          Icons.category_outlined,
+          'Kategori',
+          'Atur kategori transaksi',
         ),
-        _actionCard(
-          CupertinoIcons.arrow_down_to_line_alt,
-          'Request',
-          'Lorem ipsum',
-        ),
-        _actionCard(CupertinoIcons.person_3_fill, 'Contact', 'Lorem ipsum'),
+        _actionCard(Icons.star_outline, 'Wishlist', 'Daftar keinginan'),
       ],
     );
   }
@@ -208,20 +227,32 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.grey[100], // Lighter background
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.grey[300]!), // Visible border
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.white, size: 28),
+          Icon(
+            icon,
+            color: const Color(0xFF1A237E),
+            size: 28,
+          ), // Primary app color
           const SizedBox(height: 10),
           Text(
             title,
             style: GoogleFonts.manrope(
-              color: Colors.white,
+              color: Colors.black87, // Dark text
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -229,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: GoogleFonts.manrope(color: Colors.grey[400], fontSize: 12),
+            style: GoogleFonts.manrope(color: Colors.grey[600], fontSize: 12),
           ),
         ],
       ),
@@ -239,25 +270,36 @@ class _HomeScreenState extends State<HomeScreen> {
   // Widget untuk Bottom Navigation Bar Kustom
   Widget _buildBottomAppBar() {
     return BottomAppBar(
-      color: const Color(0xFF2A2A2E),
+      color: Colors.white, // Changed to white
+      elevation: 8,
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _bottomAppBarItem(
-            icon: CupertinoIcons.home,
-            label: 'Home',
-            isSelected: true,
-          ),
-          _bottomAppBarItem(
-            icon: CupertinoIcons.chart_bar_alt_fill,
-            label: 'Statistic',
-          ),
-          const SizedBox(width: 40), // Ruang untuk FAB
-          _bottomAppBarItem(icon: CupertinoIcons.creditcard, label: 'My card'),
-          _bottomAppBarItem(icon: CupertinoIcons.person, label: 'Profil'),
-        ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 5,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _bottomAppBarItem(
+              icon: Icons.home,
+              label: 'Home',
+              isSelected: true,
+            ),
+            _bottomAppBarItem(icon: Icons.bar_chart, label: 'Statistik'),
+            const SizedBox(width: 40), // Ruang untuk FAB
+            _bottomAppBarItem(icon: Icons.credit_card, label: 'Kartu'),
+            _bottomAppBarItem(icon: Icons.person, label: 'Profil'),
+          ],
+        ),
       ),
     );
   }
@@ -268,15 +310,21 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isSelected = false,
   }) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize:
+          MainAxisSize.min, // Membuat Column hanya memakan ruang seperlunya
       children: [
-        Icon(icon, color: isSelected ? Colors.white : Colors.grey),
+        Icon(
+          icon,
+          color: isSelected ? const Color(0xFF1A237E) : Colors.grey[400],
+          size: 24,
+        ),
         const SizedBox(height: 4),
         Text(
           label,
           style: GoogleFonts.manrope(
-            color: isSelected ? Colors.white : Colors.grey,
+            color: isSelected ? const Color(0xFF1A237E) : Colors.grey[400],
             fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ],
@@ -294,14 +342,14 @@ class _HomeScreenState extends State<HomeScreen> {
               return LineTooltipItem(
                 'Rata-Rata\n',
                 GoogleFonts.manrope(
-                  color: Colors.white,
+                  color: Colors.grey[800],
                   fontWeight: FontWeight.bold,
                 ),
                 children: [
                   TextSpan(
                     text: '${(barSpot.y * 100).toInt()}K',
                     style: GoogleFonts.manrope(
-                      color: Colors.white,
+                      color: Colors.grey[800],
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -316,10 +364,10 @@ class _HomeScreenState extends State<HomeScreen> {
         show: true,
         drawVerticalLine: true,
         getDrawingHorizontalLine: (value) {
-          return const FlLine(color: Color(0xff37434d), strokeWidth: 1);
+          return FlLine(color: Colors.grey[300]!, strokeWidth: 1);
         },
         getDrawingVerticalLine: (value) {
-          return const FlLine(color: Color(0xff37434d), strokeWidth: 0);
+          return FlLine(color: Colors.grey[300]!, strokeWidth: 0);
         },
       ),
       // Konfigurasi judul (sumbu X dan Y)
@@ -344,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Konfigurasi border
       borderData: FlBorderData(
         show: true,
-        border: Border.all(color: const Color(0xff37434d), width: 1),
+        border: Border.all(color: Colors.grey[200]!, width: 1),
       ),
       minX: 0,
       maxX: 11,
@@ -411,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var style = GoogleFonts.manrope(
       fontWeight: FontWeight.bold,
       fontSize: 14,
-      color: Colors.grey[400],
+      color: Colors.grey[600], // Changed to darker color
     );
     String text;
     switch (value.toInt()) {

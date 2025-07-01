@@ -19,5 +19,6 @@ dev_dependencies:
   fl_chart: ^0.68.0  # Untuk grafik
   google_fonts: ^6.2.1 # Untuk font yang stylish
 
+
 flutter:
   uses-material-design: true
