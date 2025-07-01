@@ -63,7 +63,7 @@ class _SignInScreenState extends State<SignInScreen> {
               content: Text('Login berhasil! Selamat datang, $userName'),
             ),
           );
-          // Navigasi ke halaman HomeScreen
+          // Navigasi ke halaman HomeScreen setelah login berhasil
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
@@ -143,7 +143,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
-
               Text(
                 'Email Address',
                 style: TextStyle(
@@ -180,7 +179,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               Text(
                 'Password',
                 style: TextStyle(
@@ -230,7 +228,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -268,13 +265,10 @@ class _SignInScreenState extends State<SignInScreen> {
                 ],
               ),
               const SizedBox(height: 25),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : _handleSignIn, // Panggil fungsi login
+                  onPressed: _isLoading ? null : _handleSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -304,7 +298,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
