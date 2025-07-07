@@ -1,8 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../providers/transaction_provider.dart';
+import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
 
 class StatistikScreen extends StatefulWidget {
@@ -13,39 +12,139 @@ class StatistikScreen extends StatefulWidget {
 }
 
 class _StatistikScreenState extends State<StatistikScreen> {
-  String _selectedPeriod = 'Monthly';
   final Color incomeColor = const Color(0xFF6C63FF);
   final Color expenseColor = const Color(0xFF2C2C54);
   final double width = 12;
 
+  late List<BarChartGroupData> rawBarGroups;
   late List<BarChartGroupData> showingBarGroups;
+
+  List<Transaction> _transactions = [];
+  List<Transaction> _incomeTransactions = [];
+  List<Transaction> _expenseTransactions = [];
+  bool _isLoading = true;
+  String _selectedTimeFrame = 'Monthly';
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _endDate = DateTime.now();
+  double _totalIncome = 0;
+  double _totalExpense = 0;
 
   @override
   void initState() {
     super.initState();
-
-    // Fetch data when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TransactionProvider>(
-        context,
-        listen: false,
-      ).fetchTransactions();
-    });
+    _loadTransactions();
   }
 
-  List<BarChartGroupData> _prepareBarChartData(TransactionProvider provider) {
-    final chartData = provider.getChartData();
-    final List<BarChartGroupData> barGroups = [];
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    for (int i = 0; i < chartData.length; i++) {
-      // Convert to millions for better display
-      final incomeY = chartData[i]['income'] / 1000000;
-      final expenseY = chartData[i]['expense'] / 1000000;
+    try {
+      // Load transactions from the selected date range
+      final transactions = await TransactionService()
+          .getTransactionsByDateRange(_startDate, _endDate);
 
-      barGroups.add(makeGroupData(i, incomeY, expenseY));
+      // Separate income and expense transactions
+      final incomeTransactions = transactions
+          .where((t) => t.type == 'income')
+          .toList();
+      final expenseTransactions = transactions
+          .where((t) => t.type == 'expense')
+          .toList();
+
+      // Calculate totals
+      final totalIncome = incomeTransactions.fold<double>(
+        0,
+        (sum, item) => sum + item.amount,
+      );
+      final totalExpense = expenseTransactions.fold<double>(
+        0,
+        (sum, item) => sum + item.amount,
+      );
+
+      // Create bar chart data based on real data
+      final barGroups = _createBarGroups(transactions);
+
+      setState(() {
+        _transactions = transactions;
+        _incomeTransactions = incomeTransactions;
+        _expenseTransactions = expenseTransactions;
+        _totalIncome = totalIncome;
+        _totalExpense = totalExpense;
+        rawBarGroups = barGroups;
+        showingBarGroups = barGroups;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading transactions: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<BarChartGroupData> _createBarGroups(List<Transaction> transactions) {
+    // Group transactions by month
+    final Map<int, Map<String, double>> monthlyData = {};
+
+    for (var transaction in transactions) {
+      final month = transaction.date.month - 1; // 0-indexed for chart
+      monthlyData.putIfAbsent(month, () => {'income': 0, 'expense': 0});
+
+      if (transaction.type == 'income') {
+        monthlyData[month]!['income'] =
+            (monthlyData[month]!['income'] ?? 0) + transaction.amount;
+      } else {
+        monthlyData[month]!['expense'] =
+            (monthlyData[month]!['expense'] ?? 0) + transaction.amount;
+      }
     }
 
-    return barGroups;
+    // Find the maximum amount to scale the chart
+    double maxAmount = 0;
+    monthlyData.forEach((_, data) {
+      if ((data['income'] ?? 0) > maxAmount) maxAmount = data['income']!;
+      if ((data['expense'] ?? 0) > maxAmount) maxAmount = data['expense']!;
+    });
+
+    // Scale amounts to fit in 0-6 range for the chart
+    final scale = maxAmount > 0 ? 6 / maxAmount : 1;
+
+    // Create bar groups
+    final List<BarChartGroupData> groups = [];
+
+    for (int i = 0; i < 5; i++) {
+      final income = monthlyData[i]?['income'] ?? 0;
+      final expense = monthlyData[i]?['expense'] ?? 0;
+
+      groups.add(makeGroupData(i, income * scale, expense * scale));
+    }
+
+    return groups;
+  }
+
+  void _updateTimeFrame(String timeFrame) {
+    setState(() {
+      _selectedTimeFrame = timeFrame;
+
+      // Update date range based on selected time frame
+      switch (timeFrame) {
+        case 'Weekly':
+          _startDate = DateTime.now().subtract(const Duration(days: 7));
+          break;
+        case 'Monthly':
+          _startDate = DateTime.now().subtract(const Duration(days: 30));
+          break;
+        case 'Yearly':
+          _startDate = DateTime.now().subtract(const Duration(days: 365));
+          break;
+      }
+
+      _endDate = DateTime.now();
+    });
+
+    _loadTransactions();
   }
 
   @override
@@ -56,6 +155,11 @@ class _StatistikScreenState extends State<StatistikScreen> {
       symbol: 'Rp.',
       decimalDigits: 0,
     );
+
+    // Format tanggal range
+    final dateFormatter = DateFormat('d MMM yyyy', 'id_ID');
+    final dateRangeText =
+        '${dateFormatter.format(_startDate)} - ${dateFormatter.format(_endDate)}';
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -75,224 +179,171 @@ class _StatistikScreenState extends State<StatistikScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Consumer<TransactionProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          // Prepare bar chart data
-          showingBarGroups = _prepareBarChartData(provider);
-
-          // Get date range text
-          final now = DateTime.now();
-          final startDate = DateTime(now.year, now.month - 5, 1);
-          final endDate = DateTime(now.year, now.month + 1, 0);
-          final dateRangeText =
-              '${DateFormat('MMMM d').format(startDate)} - ${DateFormat('MMMM d, y').format(endDate)}';
-
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              // Header Tanggal dan Filter
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    dateRangeText,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12.0,
-                      vertical: 4.0,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                // Header Tanggal dan Filter
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      dateRangeText,
+                      style: const TextStyle(color: Colors.grey),
                     ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedPeriod,
-                        icon: const Icon(Icons.keyboard_arrow_down),
-                        items: <String>['Monthly', 'Weekly', 'Yearly']
-                            .map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              );
-                            })
-                            .toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _selectedPeriod = newValue;
-                            });
-                          }
-                        },
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                        vertical: 4.0,
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Bar Chart
-              SizedBox(
-                height: 250,
-                child: BarChart(
-                  BarChartData(
-                    maxY: 8, // Maksimal Y dalam Juta (JT)
-                    barTouchData: BarTouchData(
-                      touchTooltipData: BarTouchTooltipData(
-                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                          return BarTooltipItem(
-                            rodIndex == 0 ? 'Pemasukan\n' : 'Pengeluaran\n',
-                            const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            children: <TextSpan>[
-                              TextSpan(
-                                text: currencyFormatter.format(
-                                  rod.toY * 1000000,
-                                ),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                        getTooltipColor: (group) => Colors.grey,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            if (value.toInt() >= showingBarGroups.length) {
-                              return const SizedBox();
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedTimeFrame,
+                          icon: const Icon(Icons.keyboard_arrow_down),
+                          items: <String>['Monthly', 'Weekly', 'Yearly']
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              _updateTimeFrame(newValue);
                             }
-
-                            final months = [
-                              'Jan',
-                              'Feb',
-                              'Mar',
-                              'Apr',
-                              'May',
-                              'Jun',
-                              'Jul',
-                              'Aug',
-                              'Sep',
-                              'Oct',
-                              'Nov',
-                              'Dec',
-                            ];
-                            final currentMonth =
-                                (now.month - 5 + value.toInt()) % 12;
-                            final monthName =
-                                months[currentMonth == 0
-                                    ? 11
-                                    : currentMonth - 1];
-
-                            return SideTitleWidget(
-                              axisSide: meta.axisSide,
-                              space: 16,
-                              child: Text(
-                                monthName,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            );
                           },
-                          reservedSize: 42,
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 35,
-                          interval: 1,
-                          getTitlesWidget: leftTitles,
                         ),
                       ),
                     ),
-                    borderData: FlBorderData(show: false),
-                    barGroups: showingBarGroups,
-                    gridData: const FlGridData(show: false),
-                  ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Total Pemasukan & Pengeluaran
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryCard(
-                      Icons.download,
-                      'Pemasukan',
-                      provider.totalIncome,
-                      currencyFormatter,
-                      Colors.blue.shade100,
+                // Bar Chart
+                SizedBox(
+                  height: 250,
+                  child: BarChart(
+                    BarChartData(
+                      maxY: 8, // Maksimal Y dalam Juta (JT)
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipColor: (group) => Colors.grey,
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: bottomTitles,
+                            reservedSize: 42,
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 35,
+                            interval: 1,
+                            getTitlesWidget: leftTitles,
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      barGroups: showingBarGroups,
+                      gridData: const FlGridData(show: false),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildSummaryCard(
-                      Icons.upload,
-                      'Pengeluaran',
-                      provider.totalExpense,
-                      currencyFormatter,
-                      Colors.purple.shade100,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Riwayat Transaksi
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Riwayat Transaksi',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Semua Transaksi',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // List of transactions
-              ...provider.getRecentTransactions().map(
-                (transaction) => _buildTransactionItem(
-                  transaction.category,
-                  transaction.type == 'income' ? 'Pemasukan' : 'Pengeluaran',
-                  transaction.amount,
-                  currencyFormatter,
-                  transaction.type == 'income',
                 ),
-              ),
-            ],
-          );
-        },
-      ),
+                const SizedBox(height: 24),
+
+                // Total Pemasukan & Pengeluaran
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSummaryCard(
+                        Icons.download,
+                        'Pemasukan',
+                        _totalIncome,
+                        currencyFormatter,
+                        Colors.blue.shade100,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildSummaryCard(
+                        Icons.upload,
+                        'Pengeluaran',
+                        _totalExpense,
+                        currencyFormatter,
+                        Colors.purple.shade100,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Riwayat Transaksi
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Riwayat Transaksi',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Semua Transaksi',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Display recent transactions
+                if (_transactions.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('Tidak ada transaksi'),
+                    ),
+                  )
+                else
+                  ...List.generate(
+                    _transactions.length > 5 ? 5 : _transactions.length,
+                    (index) {
+                      final transaction = _transactions[index];
+                      return Column(
+                        children: [
+                          _buildTransactionItem(
+                            transaction.category,
+                            transaction.type == 'income'
+                                ? 'Pemasukan'
+                                : 'Pengeluaran',
+                            transaction.amount,
+                            currencyFormatter,
+                            transaction.type == 'income',
+                          ),
+                          if (index < _transactions.length - 1) const Divider(),
+                        ],
+                      );
+                    },
+                  ),
+              ],
+            ),
     );
   }
 
@@ -318,6 +369,16 @@ class _StatistikScreenState extends State<StatistikScreen> {
         style: const TextStyle(color: Colors.grey, fontSize: 12),
       ),
     );
+  }
+
+  // Widget untuk judul di sumbu X (bawah)
+  Widget bottomTitles(double value, TitleMeta meta) {
+    final titles = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+    final Widget text = Text(
+      titles[value.toInt()],
+      style: const TextStyle(color: Colors.grey, fontSize: 14),
+    );
+    return SideTitleWidget(axisSide: meta.axisSide, space: 16, child: text);
   }
 
   // Fungsi untuk membuat data grup bar

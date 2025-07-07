@@ -1,23 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import 'pemasukan_screen.dart';
-import 'pengeluaran_screen.dart';
-import '../providers/transaction_provider.dart';
-import '../models/transaction_model.dart';
 import 'package:intl/intl.dart';
-
-// 3. Pindahkan deklarasi list warna ke dalam class atau sebagai konstanta global
-const List<Color> pemasukanGradientColors = [
-  Color(0xff23b6e6),
-  Color(0xff02d39a),
-];
-
-const List<Color> pengeluaranGradientColors = [
-  Color(0xffec456a),
-  Color(0xffff8e53),
-];
+import 'package:shared_preferences/shared_preferences.dart';
+import '../database/transaction_service.dart';
+import '../models/transaction_model.dart';
+// import 'pemasukan_screen.dart';
+// import 'pengeluaran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,648 +16,226 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _userName = 'Gung Riski';
+  bool _isLoading = true;
+  List<Transaction> _allTransactions = [];
+
+  final List<FlSpot> _dummyIncomeSpots = [
+    const FlSpot(0, 3.1),
+    const FlSpot(2, 4.5),
+    const FlSpot(4, 3.8),
+    const FlSpot(6, 5),
+    const FlSpot(8, 3.5),
+    const FlSpot(10, 4.2),
+  ];
+  final List<FlSpot> _dummyExpenseSpots = [
+    const FlSpot(0, 2.2),
+    const FlSpot(2, 2.8),
+    const FlSpot(4, 2.1),
+    const FlSpot(6, 3.4),
+    const FlSpot(8, 2.5),
+    const FlSpot(10, 3.0),
+  ];
+
   @override
   void initState() {
     super.initState();
-    // Fetch transactions when the screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TransactionProvider>(
-        context,
-        listen: false,
-      ).fetchTransactions();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await _loadUserData();
+    await _loadTransactions();
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _userName = prefs.getString('user_name') ?? 'Gung Riski';
+      });
+    }
+  }
+
+  Future<void> _loadTransactions() async {
+    try {
+      final transactions = await TransactionService().getAllTransactions();
+      transactions.sort((a, b) => a.date.compareTo(b.date));
+      if (mounted) {
+        setState(() {
+          _allTransactions = transactions;
+        });
+      }
+    } catch (e) {
+      print('Error loading transactions: $e');
+      if (mounted)
+        setState(() {
+          _allTransactions = [];
+        });
+    }
+  }
+
+  List<FlSpot> _getChartData(String type) {
+    if (_allTransactions.isEmpty) {
+      return type == 'income' ? _dummyIncomeSpots : _dummyExpenseSpots;
+    }
+    final filteredTransactions = _allTransactions
+        .where((t) => t.type == type)
+        .toList();
+    if (filteredTransactions.length < 2) {
+      return type == 'income' ? _dummyIncomeSpots : _dummyExpenseSpots;
+    }
+    return List.generate(filteredTransactions.length, (index) {
+      final transaction = filteredTransactions[index];
+      final yValue = transaction.amount / 100000;
+      return FlSpot(index.toDouble(), yValue);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final transactionProvider = Provider.of<TransactionProvider>(context);
-    final formatter = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp',
-      decimalDigits: 0,
-    );
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: transactionProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 30),
-                    _buildBalanceCard(transactionProvider, formatter),
-                    const SizedBox(height: 30),
-                    _buildChartSection(transactionProvider),
-                    const SizedBox(height: 20),
-                    _buildLegend(),
-                    const SizedBox(height: 30),
-                    _buildRecentTransactions(transactionProvider, formatter),
-                    const SizedBox(height: 20),
-                    _buildActionGrid(),
-                  ],
-                ),
+      backgroundColor: const Color(0xFFF8F9FD),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: CustomScrollView(
+                slivers: [
+                  _buildAppBar(),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 24),
+                          _buildChartSection(),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Minim dolor in amet nulla laboris enim dolore consequatt.',
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildChartLegend(),
+                          const SizedBox(height: 24),
+                          _buildActionGrid(),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-      ),
+            ),
+      bottomNavigationBar: _buildBottomNavBar(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddTransactionDialog(context),
-        backgroundColor: const Color(0xFF1A237E),
+        onPressed: () {
+          print("Add transaction tapped");
+        },
+        backgroundColor: const Color(0xFF3A4276),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildBottomAppBar(),
     );
   }
 
-  // New method to show transaction dialog
-  void _showAddTransactionDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.arrow_upward, color: Colors.green),
-                title: const Text('Tambah Pemasukan'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PemasukanScreen(),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.arrow_downward, color: Colors.red),
-                title: const Text('Tambah Pengeluaran'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PengeluaranScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // New method to show balance card
-  Widget _buildBalanceCard(
-    TransactionProvider provider,
-    NumberFormat formatter,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF283593)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  SliverAppBar _buildAppBar() {
+    return SliverAppBar(
+      backgroundColor: const Color(0xFFF8F9FD),
+      pinned: true,
+      elevation: 0,
+      title: Row(
         children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            formatter.format(provider.balance),
-            style: GoogleFonts.manrope(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+          const CircleAvatar(
+            radius: 22,
+            backgroundImage: NetworkImage(
+              'https://i.pravatar.cc/150?u=gungriski',
             ),
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _balanceItem(
-                Icons.arrow_downward,
-                'Income',
-                formatter.format(provider.totalIncome),
-                Colors.green.shade300,
+              Text(
+                'Welcome back',
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                ),
               ),
-              _balanceItem(
-                Icons.arrow_upward,
-                'Expense',
-                formatter.format(provider.totalExpense),
-                Colors.red.shade300,
+              Text(
+                _userName,
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _balanceItem(IconData icon, String label, String amount, Color color) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
+      actions: [
+        IconButton(
+          onPressed: () {
+            print("Notification tapped");
+          },
+          icon: Icon(
+            Icons.notifications_none_rounded,
+            color: Colors.grey[800],
+            size: 28,
           ),
-          child: Icon(icon, color: color, size: 16),
         ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-            Text(
-              amount,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        const SizedBox(width: 12),
       ],
     );
   }
 
-  // Update chart section to use real data
-  Widget _buildChartSection(TransactionProvider provider) {
-    // Get chart data from provider
-    final chartData = provider.getChartData();
-
+  Widget _buildChartSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.show_chart, color: Colors.grey[800], size: 28),
-            const SizedBox(width: 10),
+            const Icon(Icons.show_chart_rounded, color: Colors.black87),
+            const SizedBox(width: 8),
             Text(
-              'Pemasukan dan Pengeluaran',
+              "Pemasukan dan Pengeluaran",
               style: GoogleFonts.manrope(
-                color: Colors.black87,
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
           ],
         ),
         const SizedBox(height: 20),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            height: 200,
-            child: LineChart(mainDataWithRealData(chartData)),
+        SizedBox(
+          height: 200,
+          child: LineChart(
+            // Cukup panggil method _mainChartData()
+            _mainChartData(),
           ),
         ),
       ],
     );
   }
 
-  // New method to create chart data from real data
-  LineChartData mainDataWithRealData(List<Map<String, dynamic>> chartData) {
-    // Create spots for income and expense lines
-    final incomeSpots = <FlSpot>[];
-    final expenseSpots = <FlSpot>[];
-
-    // Maximum value for Y axis scaling
-    double maxY = 0;
-
-    // Fill the spots
-    for (int i = 0; i < chartData.length; i++) {
-      final income = chartData[i]['income'] / 100000; // Convert to 100K units
-      final expense = chartData[i]['expense'] / 100000;
-
-      incomeSpots.add(FlSpot(i.toDouble(), income));
-      expenseSpots.add(FlSpot(i.toDouble(), expense));
-
-      maxY = [
-        maxY,
-        income,
-        expense,
-      ].reduce((curr, next) => curr > next ? curr : next);
-    }
-
-    // Add some buffer to max Y
-    maxY = (maxY * 1.2).ceilToDouble();
-    if (maxY < 5) maxY = 5; // Minimum max Y
-
+  LineChartData _mainChartData() {
     return LineChartData(
-      lineTouchData: LineTouchData(
-        touchTooltipData: LineTouchTooltipData(
-          getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-            return touchedBarSpots.map((barSpot) {
-              return LineTooltipItem(
-                barSpot.barIndex == 0 ? 'Pemasukan\n' : 'Pengeluaran\n',
-                GoogleFonts.manrope(
-                  color: Colors.grey[800],
-                  fontWeight: FontWeight.bold,
-                ),
-                children: [
-                  TextSpan(
-                    text:
-                        'Rp${NumberFormat('#,###').format(barSpot.y * 100000)}',
-                    style: GoogleFonts.manrope(
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              );
-            }).toList();
-          },
-        ),
-      ),
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: true,
-        getDrawingHorizontalLine: (value) {
-          return FlLine(color: Colors.grey[300]!, strokeWidth: 1);
-        },
-        getDrawingVerticalLine: (value) {
-          return FlLine(color: Colors.grey[300]!, strokeWidth: 0);
-        },
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              if (value < 0 || value >= chartData.length)
-                return const SizedBox();
-
-              final months = [
-                'Jan',
-                'Feb',
-                'Mar',
-                'Apr',
-                'May',
-                'Jun',
-                'Jul',
-                'Aug',
-                'Sep',
-                'Oct',
-                'Nov',
-                'Dec',
-              ];
-              final monthIndex = chartData[value.toInt()]['month'] - 1;
-
-              return SideTitleWidget(
-                axisSide: meta.axisSide,
-                space: 8,
-                child: Text(
-                  months[monthIndex],
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              );
-            },
-            reservedSize: 30,
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: maxY / 5,
-            reservedSize: 42,
-            getTitlesWidget: (value, meta) {
-              if (value == 0) {
-                return SideTitleWidget(
-                  axisSide: meta.axisSide,
-                  space: 8,
-                  child: const Text(
-                    '0',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                );
-              }
-
-              return SideTitleWidget(
-                axisSide: meta.axisSide,
-                space: 8,
-                child: Text(
-                  '${(value).toInt()}00K',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: Colors.grey[200]!, width: 1),
-      ),
-      minX: 0,
-      maxX: chartData.length - 1.0,
-      minY: 0,
-      maxY: maxY,
-      lineBarsData: [
-        LineChartBarData(
-          spots: incomeSpots,
-          isCurved: true,
-          gradient: const LinearGradient(colors: pemasukanGradientColors),
-          barWidth: 3,
-          isStrokeCapRound: true,
-          dotData: const FlDotData(show: false),
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: pemasukanGradientColors
-                  .map((color) => color.withOpacity(0.3))
-                  .toList(),
-            ),
-          ),
-        ),
-        LineChartBarData(
-          spots: expenseSpots,
-          isCurved: true,
-          gradient: const LinearGradient(colors: pengeluaranGradientColors),
-          barWidth: 3,
-          isStrokeCapRound: true,
-          dotData: const FlDotData(show: false),
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: pengeluaranGradientColors
-                  .map((color) => color.withOpacity(0.3))
-                  .toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // New method to show recent transactions
-  Widget _buildRecentTransactions(
-    TransactionProvider provider,
-    NumberFormat formatter,
-  ) {
-    final recentTransactions = provider.getRecentTransactions();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recent Transactions',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to transactions list view
-              },
-              child: Text(
-                'See All',
-                style: GoogleFonts.manrope(color: const Color(0xFF1A237E)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        if (recentTransactions.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                'No transactions yet',
-                style: GoogleFonts.manrope(color: Colors.grey),
-              ),
-            ),
-          )
-        else
-          ...recentTransactions.map(
-            (transaction) => _buildTransactionItem(transaction, formatter),
-          ),
-      ],
-    );
-  }
-
-  // New method to build transaction item
-  Widget _buildTransactionItem(
-    Transaction transaction,
-    NumberFormat formatter,
-  ) {
-    final isIncome = transaction.type == 'income';
-    final date = DateFormat('dd MMM').format(transaction.date);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isIncome
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-              color: isIncome ? Colors.green : Colors.red,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.category,
-                  style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  transaction.description.isNotEmpty
-                      ? transaction.description
-                      : isIncome
-                      ? 'Income'
-                      : 'Expense',
-                  style: GoogleFonts.manrope(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isIncome ? '+' : '-'}${formatter.format(transaction.amount)}',
-                style: GoogleFonts.manrope(
-                  color: isIncome ? Colors.green : Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                date,
-                style: GoogleFonts.manrope(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 👇 SEMUA METODE HELPER DIBAWAH INI DIPINDAHKAN KE DALAM KELAS HomeScreen 👇
-
-  // Widget untuk Header (Avatar, Nama, Notifikasi)
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        const CircleAvatar(
-          radius: 28,
-          backgroundImage: NetworkImage(
-            'https://i.pravatar.cc/150?u=gungriski',
-          ), // Avatar placeholder
-        ),
-        const SizedBox(width: 15),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome back',
-              style: GoogleFonts.manrope(color: Colors.grey[600], fontSize: 14),
-            ),
-            Text(
-              'Gung Riski',
-              style: GoogleFonts.manrope(
-                color: Colors
-                    .black87, // Changed to dark color for white background
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[200], // Lighter background for white theme
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.notifications, // DIGANTI: dari CupertinoIcons.bell_fill
-            color: Colors.grey[800], // Darker icon for white background
-            size: 24,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Konfigurasi utama untuk LineChart dari fl_chart
-  LineChartData mainData() {
-    return LineChartData(
-      lineTouchData: LineTouchData(
-        touchTooltipData: LineTouchTooltipData(
-          getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-            return touchedBarSpots.map((barSpot) {
-              return LineTooltipItem(
-                'Rata-Rata\n',
-                GoogleFonts.manrope(
-                  color: Colors.grey[800],
-                  fontWeight: FontWeight.bold,
-                ),
-                children: [
-                  TextSpan(
-                    text: '${(barSpot.y * 100).toInt()}K',
-                    style: GoogleFonts.manrope(
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              );
-            }).toList();
-          },
-        ),
-      ),
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: true,
-        getDrawingHorizontalLine: (value) {
-          return FlLine(color: Colors.grey[300]!, strokeWidth: 1);
-        },
-        getDrawingVerticalLine: (value) {
-          return FlLine(color: Colors.grey[300]!, strokeWidth: 0);
-        },
-      ),
+      // Animation duration is not a valid parameter here
+      gridData: const FlGridData(show: false),
       titlesData: FlTitlesData(
         show: true,
         rightTitles: const AxisTitles(
@@ -681,66 +248,75 @@ class _HomeScreenState extends State<HomeScreen> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            interval: 1.5,
-            reservedSize: 42,
+            interval: 1,
             getTitlesWidget: leftTitleWidgets,
+            reservedSize: 38,
           ),
         ),
       ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: Colors.grey[200]!, width: 1),
-      ),
+      borderData: FlBorderData(show: false),
       minX: 0,
-      maxX: 11,
+      maxX: 10,
       minY: 0,
       maxY: 6,
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (FlSpot spot) => Colors.black,
+          getTooltipItems: (touchedSpots) {
+            return touchedSpots.map((spot) {
+              final amount = (spot.y * 100000).toInt();
+              final formatter = NumberFormat.currency(
+                locale: 'id_ID',
+                symbol: 'Rp',
+                decimalDigits: 0,
+              );
+              return LineTooltipItem(
+                'Rata-Rata\n${formatter.format(amount)}',
+                const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            }).toList();
+          },
+        ),
+      ),
       lineBarsData: [
         LineChartBarData(
-          spots: const [
-            FlSpot(0, 3),
-            FlSpot(2.6, 2),
-            FlSpot(4.9, 5),
-            FlSpot(6.8, 3.1),
-            FlSpot(8, 4),
-            FlSpot(9.5, 3),
-            FlSpot(11, 4),
-          ],
+          spots: _getChartData('income'),
           isCurved: true,
-          gradient: const LinearGradient(colors: pemasukanGradientColors),
-          barWidth: 5,
+          gradient: const LinearGradient(
+            colors: [Color(0xff23b6e6), Color(0xff02d39a)],
+          ),
+          barWidth: 4,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: pemasukanGradientColors
-                  .map((color) => color.withOpacity(0.3))
-                  .toList(),
+              colors: [
+                const Color(0xff23b6e6).withOpacity(0.3),
+                const Color(0xff02d39a).withOpacity(0.3),
+              ],
             ),
           ),
         ),
         LineChartBarData(
-          spots: const [
-            FlSpot(0, 1.5),
-            FlSpot(2.6, 2.5),
-            FlSpot(4.9, 2),
-            FlSpot(6.8, 2.8),
-            FlSpot(8, 2.2),
-            FlSpot(9.5, 2.5),
-            FlSpot(11, 2.0),
-          ],
+          spots: _getChartData('expense'),
           isCurved: true,
-          gradient: const LinearGradient(colors: pengeluaranGradientColors),
-          barWidth: 5,
+          gradient: const LinearGradient(
+            colors: [Color(0xfff12711), Color(0xfff5af19)],
+          ),
+          barWidth: 4,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: pengeluaranGradientColors
-                  .map((color) => color.withOpacity(0.3))
-                  .toList(),
+              colors: [
+                const Color(0xfff12711).withOpacity(0.2),
+                const Color(0xfff5af19).withOpacity(0.2),
+              ],
             ),
           ),
         ),
@@ -748,17 +324,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget kustom untuk judul sumbu Y (kiri)
   Widget leftTitleWidgets(double value, TitleMeta meta) {
-    var style = GoogleFonts.manrope(
+    final style = GoogleFonts.manrope(
+      color: Colors.grey[700],
       fontWeight: FontWeight.bold,
-      fontSize: 14,
-      color: Colors.grey[600], // Changed to darker color
+      fontSize: 12,
     );
     String text;
     switch (value.toInt()) {
       case 0:
-        text = '50K';
+        text = '0K';
         break;
       case 1:
         text = '100K';
@@ -772,30 +347,16 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return Container();
     }
-
     return Text(text, style: style, textAlign: TextAlign.left);
   }
 
-  // Widget untuk legenda chart
-  Widget _buildLegend() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildChartLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Text(
-          'Minim dolor in amet nulla laboris enim dolore consequatt.',
-          style: GoogleFonts.manrope(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ), // Lighter gray
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            _legendItem(const Color(0xff23b6e6), 'Pemasukan'),
-            const SizedBox(width: 20),
-            _legendItem(const Color(0xffec456a), 'Pengeluaran'),
-          ],
-        ),
+        _legendItem(const Color(0xff23b6e6), "Pemasukan"),
+        const SizedBox(width: 24),
+        _legendItem(const Color(0xfff12711), "Pengeluaran"),
       ],
     );
   }
@@ -806,143 +367,160 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           width: 16,
           height: 16,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
         ),
         const SizedBox(width: 8),
         Text(
           text,
           style: GoogleFonts.manrope(
-            color: Colors.black87, // Changed to dark color
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[800],
           ),
         ),
       ],
     );
   }
 
-  // Widget untuk Grid Tombol Aksi
   Widget _buildActionGrid() {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 15,
-      mainAxisSpacing: 15,
-      childAspectRatio: 1.2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.4,
       children: [
-        // KARTU-KARTU TELAH DIGANTI SESUAI PERMINTAAN
-        _actionCard(
-          Icons.account_balance_wallet_outlined,
-          'Budgeting',
-          'Alokasi dana bulanan',
+        _actionButton(
+          icon: Icons.send_rounded,
+          title: 'Send money',
+          subtitle: 'Take acc to acc',
+          onTap: () {
+            print('Send Money Tapped');
+          },
         ),
-        _actionCard(Icons.analytics_outlined, 'Laporan', 'Laporan keuangan'),
-        _actionCard(
-          Icons.category_outlined,
-          'Kategori',
-          'Atur kategori transaksi',
+        _actionButton(
+          icon: Icons.receipt_long_rounded,
+          title: 'Pay the bill',
+          subtitle: 'Lorem ipsum',
+          onTap: () {
+            print('Pay Bill Tapped');
+          },
         ),
-        _actionCard(Icons.star_outline, 'Wishlist', 'Daftar keinginan'),
+        _actionButton(
+          icon: Icons.arrow_downward_rounded,
+          title: 'Request',
+          subtitle: 'Lorem ipsum',
+          onTap: () {
+            print('Request Tapped');
+          },
+        ),
+        _actionButton(
+          icon: Icons.people_alt_rounded,
+          title: 'Contact',
+          subtitle: 'Lorem ipsum',
+          onTap: () {
+            print('Contact Tapped');
+          },
+        ),
       ],
     );
   }
 
-  Widget _actionCard(IconData icon, String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100], // Lighter background
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[300]!), // Visible border
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            color: const Color(0xFF1A237E),
-            size: 28,
-          ), // Primary app color
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: GoogleFonts.manrope(
-              color: Colors.black87, // Dark text
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: GoogleFonts.manrope(color: Colors.grey[600], fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Widget untuk Bottom Navigation Bar Kustom
-  Widget _buildBottomAppBar() {
-    return BottomAppBar(
-      color: Colors.white, // Changed to white
-      elevation: 8,
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
+  Widget _actionButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _bottomAppBarItem(
-              icon: Icons.home,
-              label: 'Home',
-              isSelected: true,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 2,
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
-            _bottomAppBarItem(icon: Icons.bar_chart, label: 'Statistik'),
-            const SizedBox(width: 40), // Ruang untuk FAB
-            _bottomAppBarItem(icon: Icons.credit_card, label: 'Kartu'),
-            _bottomAppBarItem(icon: Icons.person, label: 'Profil'),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32, color: const Color(0xFF3A4276)),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _bottomAppBarItem({
-    required IconData icon,
-    required String label,
-    bool isSelected = false,
-  }) {
-    return Column(
-      mainAxisSize:
-          MainAxisSize.min, // Membuat Column hanya memakan ruang seperlunya
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? const Color(0xFF1A237E) : Colors.grey[400],
-          size: 24,
+  Widget _buildBottomNavBar() {
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8.0,
+      color: Colors.white,
+      elevation: 10,
+      child: SizedBox(
+        height: 60,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _navItem(Icons.home_filled, 'Home', true, () {}),
+            _navItem(Icons.bar_chart_rounded, 'Statistic', false, () {}),
+            const SizedBox(width: 40), // Space for FAB
+            _navItem(Icons.star_border_rounded, 'Wishlist', false, () {}),
+            _navItem(Icons.person_outline_rounded, 'Profil', false, () {}),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.manrope(
-            color: isSelected ? const Color(0xFF1A237E) : Colors.grey[400],
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
+      ),
     );
   }
-} // <-- Kurung kurawal penutup untuk kelas HomeScreen
+
+  Widget _navItem(
+    IconData icon,
+    String label,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
+    final color = isActive ? const Color(0xFF3A4276) : Colors.grey[400];
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color),
+            Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

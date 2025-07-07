@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:provider/provider.dart';
-import '../providers/transaction_provider.dart';
+import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,26 +14,23 @@ class PemasukanScreen extends StatefulWidget {
 
 class _PemasukanScreenState extends State<PemasukanScreen> {
   final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController(
+    text: 'Rp4.000.000',
+  );
   final TextEditingController _descriptionController = TextEditingController();
   String _selectedCategory = 'Gaji';
-  DateTime? _selectedDate;
-  bool _isProcessing = false;
+  DateTime? _selectedDate = DateTime.now();
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null);
-
-    // Set default date to today
-    _selectedDate = DateTime.now();
+    // Set initial date
     _dateController.text = DateFormat(
       'dd MMMM yyyy',
       'id_ID',
     ).format(_selectedDate!);
-
-    // Default amount text
-    _amountController.text = '0';
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -56,39 +52,39 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     }
   }
 
-  Future<int> _getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('user_id') ?? 1; // Default to 1 if not found
+  @override
+  void dispose() {
+    _dateController.dispose();
+    _amountController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
-  Future<void> _saveIncome() async {
-    // Validate inputs
-    if (_selectedDate == null) {
-      _showErrorSnackBar('Pilih tanggal terlebih dahulu');
-      return;
-    }
-
-    if (_amountController.text.isEmpty ||
-        double.tryParse(
-              _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''),
-            ) ==
-            null) {
-      _showErrorSnackBar('Masukkan jumlah yang valid');
-      return;
-    }
-
+  // Save transaction to database
+  Future<void> _saveTransaction() async {
     setState(() {
-      _isProcessing = true;
+      _isLoading = true;
     });
 
     try {
-      // Parse amount, removing non-digit characters
-      final amount = double.parse(
-        _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''),
-      );
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id') ?? 0;
 
-      // Get user ID
-      final userId = await _getUserId();
+      if (userId == 0) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('User not logged in')));
+        return;
+      }
+
+      // Clean amount value from formatting
+      String amountStr = _amountController.text
+          .replaceAll('Rp', '')
+          .replaceAll('.', '')
+          .replaceAll(',', '')
+          .trim();
+      double amount = double.parse(amountStr);
 
       // Create transaction object
       final transaction = Transaction(
@@ -100,54 +96,28 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
         date: _selectedDate!,
       );
 
-      // Save using provider
-      final success = await Provider.of<TransactionProvider>(
-        context,
-        listen: false,
-      ).addTransaction(transaction);
+      // Save to database
+      final result = await TransactionService().addTransaction(transaction);
 
-      if (success) {
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pemasukan berhasil disimpan')),
-          );
-          Navigator.pop(context);
-        }
+      if (result['status'] == 'success') {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result['message'])));
+        Navigator.pop(context, true); // Return true to indicate data was saved
       } else {
-        // Show error from provider
-        if (mounted) {
-          _showErrorSnackBar(
-            Provider.of<TransactionProvider>(
-              context,
-              listen: false,
-            ).errorMessage,
-          );
-        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
       }
     } catch (e) {
-      _showErrorSnackBar('Terjadi kesalahan: ${e.toString()}');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
+      setState(() {
+        _isLoading = false;
+      });
     }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
-  void dispose() {
-    _dateController.dispose();
-    _amountController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
   }
 
   @override
@@ -252,7 +222,7 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
 
             // Tombol Simpan
             ElevatedButton(
-              onPressed: _isProcessing ? null : _saveIncome,
+              onPressed: _isLoading ? null : _saveTransaction,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2C2C54),
                 minimumSize: const Size(double.infinity, 50),
@@ -260,11 +230,14 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: _isProcessing
+              child: _isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
                     )
                   : const Text(
                       'Simpan Pemasukan',

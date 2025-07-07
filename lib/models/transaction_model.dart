@@ -6,7 +6,6 @@ class Transaction {
   final String description;
   final double amount;
   final DateTime date;
-  final String? createdAt;
 
   Transaction({
     this.id,
@@ -16,7 +15,6 @@ class Transaction {
     required this.description,
     required this.amount,
     required this.date,
-    this.createdAt,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -25,10 +23,9 @@ class Transaction {
       userId: int.parse(json['user_id'].toString()),
       type: json['type'],
       category: json['category'],
-      description: json['description'],
+      description: json['description'] ?? '',
       amount: double.parse(json['amount'].toString()),
       date: DateTime.parse(json['date']),
-      createdAt: json['created_at'],
     );
   }
 
@@ -40,8 +37,7 @@ class Transaction {
       'category': category,
       'description': description,
       'amount': amount,
-      'date': date.toIso8601String().split('T')[0], // Format: YYYY-MM-DD
-      'created_at': createdAt,
+      'date': date.toIso8601String().split('T')[0],
     };
   }
 }
