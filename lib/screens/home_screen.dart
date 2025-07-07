@@ -1,60 +1,60 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:fl_chart/fl_chart.dart'; // 1. Tambahkan import untuk fl_chart
+import 'package:google_fonts/google_fonts.dart'; // 2. Tambahkan import untuk google_fonts
+import 'pemasukan_screen.dart';
+import 'pengeluaran_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+// 3. Pindahkan deklarasi list warna ke dalam class atau sebagai konstanta global
+const List<Color> pemasukanGradientColors = [
+  Color(0xff23b6e6),
+  Color(0xff02d39a),
+];
+
+const List<Color> pengeluaranGradientColors = [
+  Color(0xffec456a),
+  Color(0xffff8e53),
+];
+
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  // Data dummy untuk gradien warna chart
-  final List<Color> pemasukanGradientColors = [
-    const Color(0xff23b6e6),
-    const Color(0xff02d39a),
-  ];
-
-  final List<Color> pengeluaranGradientColors = [
-    const Color(0xffec456a),
-    const Color(0xfff56b9a),
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    // 4. Struktur Scaffold diperbaiki dan body diisi dengan widget helper yang sudah dibuat
     return Scaffold(
-      backgroundColor: Colors.white, // Changed to white background
+      backgroundColor:
+          Colors.white, // Atur background agar kontras dengan elemen
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 30),
-                _buildChartSection(),
-                const SizedBox(height: 20),
-                _buildLegend(),
-                const SizedBox(height: 30),
-                _buildActionGrid(),
-              ],
-            ),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 30),
+              _buildChartSection(),
+              const SizedBox(height: 20),
+              _buildLegend(),
+              const SizedBox(height: 30),
+              _buildActionGrid(),
+            ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomAppBar(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(
-          0xFF1A237E,
-        ), // Changed to match app's primary color
+        onPressed: () {
+          // Aksi untuk FAB, bisa membuka dialog tambah transaksi
+        },
+        backgroundColor: const Color(0xFF1A237E), // Warna primer
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: _buildBottomAppBar(),
     );
   }
+
+  // 👇 SEMUA METODE HELPER DIBAWAH INI DIPINDAHKAN KE DALAM KELAS HomeScreen 👇
 
   // Widget untuk Header (Avatar, Nama, Notifikasi)
   Widget _buildHeader() {
@@ -276,16 +276,6 @@ class _HomeScreenState extends State<HomeScreen> {
       notchMargin: 8.0,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 5,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -334,7 +324,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Konfigurasi utama untuk LineChart dari fl_chart
   LineChartData mainData() {
     return LineChartData(
-      // Konfigurasi untuk touch/tooltip
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
@@ -359,7 +348,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-      // Konfigurasi grid
       gridData: FlGridData(
         show: true,
         drawVerticalLine: true,
@@ -370,7 +358,6 @@ class _HomeScreenState extends State<HomeScreen> {
           return FlLine(color: Colors.grey[300]!, strokeWidth: 0);
         },
       ),
-      // Konfigurasi judul (sumbu X dan Y)
       titlesData: FlTitlesData(
         show: true,
         rightTitles: const AxisTitles(
@@ -389,7 +376,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      // Konfigurasi border
       borderData: FlBorderData(
         show: true,
         border: Border.all(color: Colors.grey[200]!, width: 1),
@@ -398,9 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
       maxX: 11,
       minY: 0,
       maxY: 6,
-      // Data garis-garis pada chart
       lineBarsData: [
-        // Garis Pemasukan (Biru)
         LineChartBarData(
           spots: const [
             FlSpot(0, 3),
@@ -412,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
             FlSpot(11, 4),
           ],
           isCurved: true,
-          gradient: LinearGradient(colors: pemasukanGradientColors),
+          gradient: const LinearGradient(colors: pemasukanGradientColors),
           barWidth: 5,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
@@ -425,7 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        // Garis Pengeluaran (Pink)
         LineChartBarData(
           spots: const [
             FlSpot(0, 1.5),
@@ -437,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
             FlSpot(11, 2.0),
           ],
           isCurved: true,
-          gradient: LinearGradient(colors: pengeluaranGradientColors),
+          gradient: const LinearGradient(colors: pengeluaranGradientColors),
           barWidth: 5,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
@@ -481,4 +464,4 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Text(text, style: style, textAlign: TextAlign.left);
   }
-}
+} // <-- Kurung kurawal penutup untuk kelas HomeScreen

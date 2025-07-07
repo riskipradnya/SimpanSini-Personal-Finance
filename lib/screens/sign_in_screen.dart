@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/auth_service.dart';
 import 'sign_up_screen.dart';
-import 'home_screen.dart';
+import 'main_screen.dart'; // Changed from home_screen.dart to main_screen.dart
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -63,9 +63,9 @@ class _SignInScreenState extends State<SignInScreen> {
               content: Text('Login berhasil! Selamat datang, $userName'),
             ),
           );
-          // Navigasi ke halaman HomeScreen
+          // Navigasi ke halaman MainScreen
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const MainScreen()),
           );
         } else {
           // Jika login gagal, tampilkan pesan error dari server
