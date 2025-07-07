@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import '../providers/transaction_provider.dart';
+import '../models/transaction_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PengeluaranScreen extends StatefulWidget {
   const PengeluaranScreen({super.key});
@@ -11,16 +15,26 @@ class PengeluaranScreen extends StatefulWidget {
 
 class _PengeluaranScreenState extends State<PengeluaranScreen> {
   final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController(
-    text: 'Rp.50.000',
-  );
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   String _selectedCategory = 'Makan Siang';
   DateTime? _selectedDate;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null);
+
+    // Set default date to today
+    _selectedDate = DateTime.now();
+    _dateController.text = DateFormat(
+      'dd MMMM yyyy',
+      'id_ID',
+    ).format(_selectedDate!);
+
+    // Default amount text
+    _amountController.text = '0';
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -41,10 +55,97 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
     }
   }
 
+  Future<int> _getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('user_id') ?? 1; // Default to 1 if not found
+  }
+
+  Future<void> _saveExpense() async {
+    // Validate inputs
+    if (_selectedDate == null) {
+      _showErrorSnackBar('Pilih tanggal terlebih dahulu');
+      return;
+    }
+
+    if (_amountController.text.isEmpty ||
+        double.tryParse(
+              _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+            ) ==
+            null) {
+      _showErrorSnackBar('Masukkan jumlah yang valid');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      // Parse amount, removing non-digit characters
+      final amount = double.parse(
+        _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
+
+      // Get user ID
+      final userId = await _getUserId();
+
+      // Create transaction object
+      final transaction = Transaction(
+        userId: userId,
+        type: 'expense',
+        category: _selectedCategory,
+        description: _descriptionController.text,
+        amount: amount,
+        date: _selectedDate!,
+      );
+
+      // Save using provider
+      final success = await Provider.of<TransactionProvider>(
+        context,
+        listen: false,
+      ).addTransaction(transaction);
+
+      if (success) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pengeluaran berhasil disimpan')),
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        // Show error from provider
+        if (mounted) {
+          _showErrorSnackBar(
+            Provider.of<TransactionProvider>(
+              context,
+              listen: false,
+            ).errorMessage,
+          );
+        }
+      }
+    } catch (e) {
+      _showErrorSnackBar('Terjadi kesalahan: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   void dispose() {
     _dateController.dispose();
     _amountController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -117,7 +218,10 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
 
             // Keterangan
             _buildLabel('Keterangan'),
-            TextFormField(decoration: _inputDecoration('Tambahkan Keterangan')),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: _inputDecoration('Tambahkan Keterangan'),
+            ),
             const SizedBox(height: 20),
 
             // Jumlah
@@ -152,10 +256,7 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
 
             // Tombol Simpan
             ElevatedButton(
-              onPressed: () {
-                // Logika untuk menyimpan data
-                Navigator.pop(context);
-              },
+              onPressed: _isProcessing ? null : _saveExpense,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2C2C54),
                 minimumSize: const Size(double.infinity, 50),
@@ -163,10 +264,16 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Simpan Pengeluaran',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: _isProcessing
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  : const Text(
+                      'Simpan Pengeluaran',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
             const SizedBox(height: 16),
           ],

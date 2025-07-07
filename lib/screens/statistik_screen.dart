@@ -1,6 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/transaction_provider.dart';
+import '../models/transaction_model.dart';
 
 class StatistikScreen extends StatefulWidget {
   const StatistikScreen({super.key});
@@ -10,26 +13,39 @@ class StatistikScreen extends StatefulWidget {
 }
 
 class _StatistikScreenState extends State<StatistikScreen> {
+  String _selectedPeriod = 'Monthly';
   final Color incomeColor = const Color(0xFF6C63FF);
   final Color expenseColor = const Color(0xFF2C2C54);
   final double width = 12;
 
-  late List<BarChartGroupData> rawBarGroups;
   late List<BarChartGroupData> showingBarGroups;
 
   @override
   void initState() {
     super.initState();
-    // Data dummy untuk chart
-    final barGroup1 = makeGroupData(0, 4, 1.8); // Jan
-    final barGroup2 = makeGroupData(1, 6.5, 3); // Feb
-    final barGroup3 = makeGroupData(2, 2.5, 3.5); // Mar
-    final barGroup4 = makeGroupData(3, 4.5, 1.5); // Apr
-    final barGroup5 = makeGroupData(4, 5.5, 3.2); // May
 
-    final items = [barGroup1, barGroup2, barGroup3, barGroup4, barGroup5];
-    rawBarGroups = items;
-    showingBarGroups = rawBarGroups;
+    // Fetch data when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TransactionProvider>(
+        context,
+        listen: false,
+      ).fetchTransactions();
+    });
+  }
+
+  List<BarChartGroupData> _prepareBarChartData(TransactionProvider provider) {
+    final chartData = provider.getChartData();
+    final List<BarChartGroupData> barGroups = [];
+
+    for (int i = 0; i < chartData.length; i++) {
+      // Convert to millions for better display
+      final incomeY = chartData[i]['income'] / 1000000;
+      final expenseY = chartData[i]['expense'] / 1000000;
+
+      barGroups.add(makeGroupData(i, incomeY, expenseY));
+    }
+
+    return barGroups;
   }
 
   @override
@@ -59,146 +75,223 @@ class _StatistikScreenState extends State<StatistikScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // Header Tanggal dan Filter
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Consumer<TransactionProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Prepare bar chart data
+          showingBarGroups = _prepareBarChartData(provider);
+
+          // Get date range text
+          final now = DateTime.now();
+          final startDate = DateTime(now.year, now.month - 5, 1);
+          final endDate = DateTime(now.year, now.month + 1, 0);
+          final dateRangeText =
+              '${DateFormat('MMMM d').format(startDate)} - ${DateFormat('MMMM d, y').format(endDate)}';
+
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
             children: [
-              const Text(
-                'February 28 - March 28, 2020',
-                style: TextStyle(color: Colors.grey),
+              // Header Tanggal dan Filter
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    dateRangeText,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12.0,
+                      vertical: 4.0,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedPeriod,
+                        icon: const Icon(Icons.keyboard_arrow_down),
+                        items: <String>['Monthly', 'Weekly', 'Yearly']
+                            .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            })
+                            .toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedPeriod = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12.0,
-                  vertical: 4.0,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: 'Monthly',
-                    icon: const Icon(Icons.keyboard_arrow_down),
-                    items: <String>['Monthly', 'Weekly', 'Yearly']
-                        .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
+              const SizedBox(height: 24),
+
+              // Bar Chart
+              SizedBox(
+                height: 250,
+                child: BarChart(
+                  BarChartData(
+                    maxY: 8, // Maksimal Y dalam Juta (JT)
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          return BarTooltipItem(
+                            rodIndex == 0 ? 'Pemasukan\n' : 'Pengeluaran\n',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: <TextSpan>[
+                              TextSpan(
+                                text: currencyFormatter.format(
+                                  rod.toY * 1000000,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           );
-                        })
-                        .toList(),
-                    onChanged: (String? newValue) {},
+                        },
+                        getTooltipColor: (group) => Colors.grey,
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            if (value.toInt() >= showingBarGroups.length) {
+                              return const SizedBox();
+                            }
+
+                            final months = [
+                              'Jan',
+                              'Feb',
+                              'Mar',
+                              'Apr',
+                              'May',
+                              'Jun',
+                              'Jul',
+                              'Aug',
+                              'Sep',
+                              'Oct',
+                              'Nov',
+                              'Dec',
+                            ];
+                            final currentMonth =
+                                (now.month - 5 + value.toInt()) % 12;
+                            final monthName =
+                                months[currentMonth == 0
+                                    ? 11
+                                    : currentMonth - 1];
+
+                            return SideTitleWidget(
+                              axisSide: meta.axisSide,
+                              space: 16,
+                              child: Text(
+                                monthName,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            );
+                          },
+                          reservedSize: 42,
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 35,
+                          interval: 1,
+                          getTitlesWidget: leftTitles,
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: showingBarGroups,
+                    gridData: const FlGridData(show: false),
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-          // Bar Chart
-          SizedBox(
-            height: 250,
-            child: BarChart(
-              BarChartData(
-                maxY: 8, // Maksimal Y dalam Juta (JT)
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) => Colors.grey,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: bottomTitles,
-                      reservedSize: 42,
+              // Total Pemasukan & Pengeluaran
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryCard(
+                      Icons.download,
+                      'Pemasukan',
+                      provider.totalIncome,
+                      currencyFormatter,
+                      Colors.blue.shade100,
                     ),
                   ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 35,
-                      interval: 1,
-                      getTitlesWidget: leftTitles,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      Icons.upload,
+                      'Pengeluaran',
+                      provider.totalExpense,
+                      currencyFormatter,
+                      Colors.purple.shade100,
                     ),
                   ),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups: showingBarGroups,
-                gridData: const FlGridData(show: false),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-          // Total Pemasukan & Pengeluaran
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  Icons.download,
-                  'Pemasukan',
-                  6000000,
-                  currencyFormatter,
-                  Colors.blue.shade100,
-                ),
+              // Riwayat Transaksi
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Riwayat Transaksi',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Semua Transaksi',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildSummaryCard(
-                  Icons.upload,
-                  'Pengeluaran',
-                  2000000,
+              const SizedBox(height: 16),
+
+              // List of transactions
+              ...provider.getRecentTransactions().map(
+                (transaction) => _buildTransactionItem(
+                  transaction.category,
+                  transaction.type == 'income' ? 'Pemasukan' : 'Pengeluaran',
+                  transaction.amount,
                   currencyFormatter,
-                  Colors.purple.shade100,
+                  transaction.type == 'income',
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-
-          // Riwayat Transaksi
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Riwayat Transaksi',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'Semua Transaksi',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildTransactionItem(
-            'GAJI',
-            'Pemasukan',
-            4000000,
-            currencyFormatter,
-            true,
-          ),
-          const Divider(),
-          _buildTransactionItem(
-            'Makan Siang',
-            'Pengeluaran',
-            50000,
-            currencyFormatter,
-            false,
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -225,16 +318,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
         style: const TextStyle(color: Colors.grey, fontSize: 12),
       ),
     );
-  }
-
-  // Widget untuk judul di sumbu X (bawah)
-  Widget bottomTitles(double value, TitleMeta meta) {
-    final titles = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-    final Widget text = Text(
-      titles[value.toInt()],
-      style: const TextStyle(color: Colors.grey, fontSize: 14),
-    );
-    return SideTitleWidget(axisSide: meta.axisSide, space: 16, child: text);
   }
 
   // Fungsi untuk membuat data grup bar

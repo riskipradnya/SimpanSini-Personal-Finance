@@ -1,17 +1,22 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-// Diperlukan untuk delegates di bawah
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/main_screen.dart';
 import 'screens/sign_in_screen.dart';
+import 'providers/transaction_provider.dart';
 
 // 1. Ubah main menjadi async dan gunakan await untuk inisialisasi
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => TransactionProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
