@@ -55,12 +55,19 @@ class TransactionService {
   Future<Map<String, dynamic>> addTransaction(Transaction transaction) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/add_transaction.php'),
-      body: transaction.toJson(),
+      body: transaction.toJson().map(
+        (key, value) => MapEntry(key, value?.toString() ?? ''),
+      ),
     );
-
     if (response.statusCode == 200) {
       try {
-        return json.decode(response.body);
+        if (response.body.trim().startsWith('{')) {
+          return json.decode(response.body);
+        } else {
+          print('Unexpected response format in addTransaction:');
+          print('Response body: ${response.body}');
+          return {'status': 'error', 'message': 'Invalid response from server'};
+        }
       } on FormatException catch (e) {
         print('Error parsing JSON from addTransaction: $e');
         print('Response body: ${response.body}');
