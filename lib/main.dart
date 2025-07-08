@@ -1,9 +1,16 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'screens/sign_in_screen.dart'; // <-- Path import diperbarui (tanpa ../)
+// Diperlukan untuk delegates di bawah
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'screens/main_screen.dart';
+import 'screens/sign_in_screen.dart';
 
-void main() {
+// Kode ini sudah benar
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
   runApp(const MyApp());
 }
 
@@ -13,12 +20,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Sign In Demo',
+      title: 'SimpanSini Personal Finance',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         fontFamily: 'Poppins',
       ),
+      // Pengaturan lokalisasi ini juga sudah benar
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('id', 'ID')],
       home: const SignInScreen(),
       debugShowCheckedModeBanner: false,
     );
