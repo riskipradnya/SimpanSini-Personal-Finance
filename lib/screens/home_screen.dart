@@ -5,9 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
-import 'statistik_screen.dart'; // Add import for StatistikScreen
-// import 'pemasukan_screen.dart';
-// import 'pengeluaran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -138,16 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          print("Add transaction tapped");
-        },
-        backgroundColor: const Color(0xFF3A4276),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -462,6 +449,19 @@ class _HomeScreenState extends State<HomeScreen> {
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
                 color: Colors.black87,
               ),
             ),
