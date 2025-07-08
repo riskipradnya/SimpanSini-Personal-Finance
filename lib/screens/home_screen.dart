@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
+import 'statistik_screen.dart'; // Add import for StatistikScreen
 // import 'pemasukan_screen.dart';
 // import 'pengeluaran_screen.dart';
 
@@ -157,11 +158,11 @@ class _HomeScreenState extends State<HomeScreen> {
       elevation: 0,
       title: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 22,
-            backgroundImage: NetworkImage(
-              'https://i.pravatar.cc/150?u=gungriski',
-            ),
+            backgroundColor: Colors.grey[300],
+            child: Icon(Icons.person, color: Colors.grey[700], size: 30),
+            // Replacing network image with icon to avoid SocketException
           ),
           const SizedBox(width: 12),
           Column(
@@ -485,11 +486,30 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _navItem(Icons.home_filled, 'Home', true, () {}),
-            _navItem(Icons.bar_chart_rounded, 'Statistic', false, () {}),
+            _navItem(Icons.home_filled, 'Home', true, () {
+              // Current page, no navigation needed
+            }),
+            _navItem(Icons.bar_chart_rounded, 'Statistic', false, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StatistikScreen(),
+                ),
+              );
+            }),
             const SizedBox(width: 40), // Space for FAB
-            _navItem(Icons.star_border_rounded, 'Wishlist', false, () {}),
-            _navItem(Icons.person_outline_rounded, 'Profil', false, () {}),
+            _navItem(Icons.star_border_rounded, 'Wishlist', false, () {
+              // Navigate to wishlist when implemented
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Wishlist feature coming soon')),
+              );
+            }),
+            _navItem(Icons.person_outline_rounded, 'Profil', false, () {
+              // Navigate to profile when implemented
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Profile feature coming soon')),
+              );
+            }),
           ],
         ),
       ),

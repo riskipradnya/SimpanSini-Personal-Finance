@@ -23,12 +23,19 @@ class TransactionService {
 
     if (response.statusCode == 200) {
       try {
-        final data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return (data['data'] as List)
-              .map((item) => Transaction.fromJson(item))
-              .toList();
+        // Cek apakah response body diawali dengan karakter '{' (JSON) atau tidak
+        if (response.body.trim().startsWith('{')) {
+          final data = json.decode(response.body);
+          if (data is Map<String, dynamic> && data['status'] == 'success') {
+            return (data['data'] as List)
+                .map((item) => Transaction.fromJson(item))
+                .toList();
+          } else {
+            return [];
+          }
         } else {
+          print('Unexpected response format in getAllTransactions:');
+          print('Response body: ${response.body}');
           return [];
         }
       } on FormatException catch (e) {
@@ -73,12 +80,18 @@ class TransactionService {
 
     if (response.statusCode == 200) {
       try {
-        final data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return (data['data'] as List)
-              .map((item) => Transaction.fromJson(item))
-              .toList();
+        if (response.body.trim().startsWith('{')) {
+          final data = json.decode(response.body);
+          if (data['status'] == 'success') {
+            return (data['data'] as List)
+                .map((item) => Transaction.fromJson(item))
+                .toList();
+          } else {
+            return [];
+          }
         } else {
+          print('Unexpected response format in getTransactionsByType:');
+          print('Response body: ${response.body}');
           return [];
         }
       } on FormatException catch (e) {
@@ -89,6 +102,8 @@ class TransactionService {
     } else {
       throw Exception('Failed to load transactions');
     }
+    // Ensure a return value for all code paths
+    return [];
   }
 
   // Mendapatkan transaksi berdasarkan rentang tanggal
@@ -108,12 +123,18 @@ class TransactionService {
 
     if (response.statusCode == 200) {
       try {
-        final data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return (data['data'] as List)
-              .map((item) => Transaction.fromJson(item))
-              .toList();
+        if (response.body.trim().startsWith('{')) {
+          final data = json.decode(response.body);
+          if (data['status'] == 'success') {
+            return (data['data'] as List)
+                .map((item) => Transaction.fromJson(item))
+                .toList();
+          } else {
+            return [];
+          }
         } else {
+          print('Unexpected response format in getTransactionsByDateRange:');
+          print('Response body: ${response.body}');
           return [];
         }
       } on FormatException catch (e) {
