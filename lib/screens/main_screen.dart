@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/bottom_navigation.dart';
 import 'profile_screen.dart';
-import 'home_screen.dart'; // Changed from package import to relative path
-import 'pemasukan_screen.dart'; // Changed from package import to relative path
-import 'pengeluaran_screen.dart'; // Changed from package import to relative path
-import 'statistik_screen.dart'; // Changed from package import to relative path
+import 'home_screen.dart';
+import 'statistik_screen.dart';
+import 'pemasukan_screen.dart';
+import 'pengeluaran_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);

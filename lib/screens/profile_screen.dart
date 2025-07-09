@@ -76,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               const SizedBox(height: 40),
-              
+
               // Personal Info Section
               _buildSectionHeader('Personal Info'),
               const SizedBox(height: 16),
@@ -98,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
               const SizedBox(height: 32),
-              
+
               // Security Section
               _buildSectionHeader('Security'),
               const SizedBox(height: 16),
@@ -120,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
               const SizedBox(height: 60),
-              
+
               // Logout Button
               GestureDetector(
                 onTap: _showLogoutDialog,
@@ -168,11 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: Colors.black87,
-            ),
+            Icon(icon, size: 24, color: Colors.black87),
             const SizedBox(width: 16),
             Text(
               title,
@@ -190,10 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -202,7 +195,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Change Password'),
-        content: const Text('This feature will redirect to change password screen.'),
+        content: const Text(
+          'This feature will redirect to change password screen.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -260,10 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Implement logout logic here
               _handleLogout();
             },
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
