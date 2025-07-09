@@ -20,6 +20,8 @@ dependencies:
   font_awesome_flutter: ^10.7.0
   http: ^1.2.1
 
+  table_calendar: ^3.1.2 # Gunakan versi terbaru
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'confirmation_screen.dart'; // <-- IMPORT FILE BARU
 
 class PemasukanScreen extends StatefulWidget {
   const PemasukanScreen({super.key});
@@ -19,35 +21,116 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
   );
   final TextEditingController _descriptionController = TextEditingController();
   String _selectedCategory = 'Gaji';
-  DateTime? _selectedDate = DateTime.now();
+  DateTime _selectedDate = DateTime.now(); // Dibuat non-nullable
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null);
-    // Set initial date
-    _dateController.text = DateFormat(
-      'dd MMMM yyyy',
-      'id_ID',
-    ).format(_selectedDate!);
+    _dateController.text = DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDate);
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDate: _selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        // Format tanggal ke dalam string 'dd MMMM yyyy' (e.g., 07 Juli 2025)
-        _dateController.text = DateFormat(
-          'dd MMMM yyyy',
-          'id_ID',
-        ).format(picked);
+        _dateController.text = DateFormat('dd MMMM yyyy', 'id_ID').format(picked);
+      });
+    }
+  }
+
+  // == FUNGSI BARU UNTUK MENAMPILKAN DIALOG KONFIRMASI ==
+  Future<void> _showConfirmationDialog() async {
+    // 1. Validasi input sebelum menampilkan dialog (opsional, tapi disarankan)
+    if (_amountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Jumlah tidak boleh kosong')),
+      );
+      return;
+    }
+
+    // 2. Siapkan data transaksi dari form
+    String amountStr = _amountController.text
+        .replaceAll('Rp', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '')
+        .trim();
+    double amount = double.tryParse(amountStr) ?? 0.0;
+
+    final transaction = Transaction(
+      userId: 0, // userId akan di-set nanti saat eksekusi
+      type: 'income',
+      category: _selectedCategory,
+      description: _descriptionController.text,
+      amount: amount,
+      date: _selectedDate,
+    );
+
+    // 3. Tampilkan dialog dan tunggu hasilnya (true/false)
+    final bool? isConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmationScreen(
+        transaction: transaction,
+        title: 'Total Pemasukan', // <-- LENGKAPI DENGAN INI
+        icon: Icons.upload_rounded,  // <-- LENGKAPI DENGAN INI
+      ),
+    );
+
+    // 4. Jika user menekan "Simpan" (isConfirmed == true), eksekusi penyimpanan
+    if (isConfirmed == true) {
+      _executeSave(transaction);
+    }
+  }
+
+  // == FUNGSI BARU UNTUK EKSEKUSI PENYIMPANAN KE DATABASE ==
+  Future<void> _executeSave(Transaction transaction) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id') ?? 0;
+
+      if (userId == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User tidak ditemukan')));
+        return;
+      }
+
+      // Buat objek baru dengan userId yang benar
+      final finalTransaction = Transaction(
+        userId: userId,
+        type: transaction.type,
+        category: transaction.category,
+        description: transaction.description,
+        amount: transaction.amount,
+        date: transaction.date,
+      );
+
+      final result = await TransactionService().addTransaction(finalTransaction);
+
+      if (result['status'] == 'success') {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(result['message'])));
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -60,66 +143,6 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     super.dispose();
   }
 
-  // Save transaction to database
-  Future<void> _saveTransaction() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Get user ID from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('user_id') ?? 0;
-
-      if (userId == 0) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User not logged in')));
-        return;
-      }
-
-      // Clean amount value from formatting
-      String amountStr = _amountController.text
-          .replaceAll('Rp', '')
-          .replaceAll('.', '')
-          .replaceAll(',', '')
-          .trim();
-      double amount = double.parse(amountStr);
-
-      // Create transaction object
-      final transaction = Transaction(
-        userId: userId,
-        type: 'income',
-        category: _selectedCategory,
-        description: _descriptionController.text,
-        amount: amount,
-        date: _selectedDate!,
-      );
-
-      // Save to database
-      final result = await TransactionService().addTransaction(transaction);
-
-      if (result['status'] == 'success') {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result['message'])));
-        Navigator.pop(context, true); // Return true to indicate data was saved
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,9 +152,9 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Tambah Pemasukan',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -148,7 +171,6 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tanggal
             _buildLabel('Tanggal'),
             TextFormField(
               controller: _dateController,
@@ -160,15 +182,12 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Kategori
             _buildLabel('Kategori'),
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: _inputDecoration(''),
-              items: <String>['Gaji', 'Bonus', 'Investasi', 'Lainnya'].map((
-                String value,
-              ) {
+              items: <String>['Gaji', 'Bonus', 'Investasi', 'Lainnya']
+                  .map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
@@ -181,16 +200,12 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
               },
             ),
             const SizedBox(height: 20),
-
-            // Keterangan
             _buildLabel('Keterangan'),
             TextFormField(
               controller: _descriptionController,
               decoration: _inputDecoration('Tambahkan Keterangan'),
             ),
             const SizedBox(height: 20),
-
-            // Jumlah
             _buildLabel('Jumlah'),
             TextFormField(
               controller: _amountController,
@@ -204,14 +219,14 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.money, color: Color(0xFF2C2C54), size: 16),
-                      SizedBox(width: 4),
+                      const Icon(Icons.money, color: Color(0xFF2C2C54), size: 16),
+                      const SizedBox(width: 4),
                       Text(
                         'IDR',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -219,10 +234,9 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
               ),
             ),
             const Spacer(),
-
-            // Tombol Simpan
+            // Tombol Simpan sekarang memanggil dialog
             ElevatedButton(
-              onPressed: _isLoading ? null : _saveTransaction,
+              onPressed: _isLoading ? null : _showConfirmationDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2C2C54),
                 minimumSize: const Size(double.infinity, 50),
@@ -239,9 +253,10 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
                         strokeWidth: 3,
                       ),
                     )
-                  : const Text(
+                  : Text(
                       'Simpan Pemasukan',
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.manrope(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
             ),
             const SizedBox(height: 16),
@@ -251,18 +266,16 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     );
   }
 
-  // Helper widget untuk label
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
       ),
     );
   }
 
-  // Helper untuk dekorasi input
   InputDecoration _inputDecoration(
     String hintText, {
     Widget? prefixIcon,
@@ -274,10 +287,8 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.grey.shade100,
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 15.0,
-        horizontal: 10.0,
-      ),
+      contentPadding:
+          const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'home_screen.dart'; // Changed from package import to relative path
-import 'pemasukan_screen.dart'; // Changed from package import to relative path
-import 'pengeluaran_screen.dart'; // Changed from package import to relative path
-import 'statistik_screen.dart'; // Changed from package import to relative path
+import 'home_screen.dart';
+import 'pemasukan_screen.dart';
+import 'pengeluaran_screen.dart';
+import 'statistik_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,7 +13,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  // Indeks untuk PageView, dimulai dari 0.
+  // Home: 0, Statistik: 1, Wishlist: 2, Profil: 3
+  int _selectedIndex = 0; 
   late PageController _pageController;
 
   @override
@@ -29,52 +31,102 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 2) {
-      _showAddTransactionDialog();
-    } else {
-      setState(() {
-        _selectedIndex = index;
-        _pageController.jumpToPage(index);
-      });
-    }
+    setState(() {
+      _selectedIndex = index;
+      _pageController.jumpToPage(index);
+    });
   }
 
+  // Menggunakan showDialog untuk popup di tengah layar
   void _showAddTransactionDialog() {
-    showModalBottomSheet(
+    showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.arrow_upward, color: Colors.green),
-                title: const Text('Tambah Pemasukan'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PemasukanScreen(),
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // Baris untuk Judul dan Tombol Close (X)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pilih Jenis Transaksi',
+                      style: GoogleFonts.manrope(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.arrow_downward, color: Colors.red),
-                title: const Text('Tambah Pengeluaran'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PengeluaranScreen(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                  );
-                },
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 24), // Spasi
+
+                // Tombol Pemasukan
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3A4276),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Tutup dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const PemasukanScreen()),
+                    );
+                  },
+                  child: Text(
+                    'Pemasukan',
+                    style: GoogleFonts.manrope(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16), // Spasi
+
+                // Tombol Pengeluaran
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: Colors.grey[400]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Tutup dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const PengeluaranScreen()),
+                    );
+                  },
+                  child: Text(
+                    'Pengeluaran',
+                    style: GoogleFonts.manrope(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -91,19 +143,18 @@ class _MainScreenState extends State<MainScreen> {
             _selectedIndex = index;
           });
         },
+        // Pastikan jumlah children sesuai dengan jumlah item di nav bar
         children: const <Widget>[
           HomeScreen(),
           StatistikScreen(),
-          Center(child: Text('Add Placeholder')), // Placeholder for index 2
-          Center(child: Text('Profile')),
+          Center(child: Text('Wishlist')), // Halaman untuk Wishlist (index 2)
+          Center(child: Text('Profile')),  // Halaman untuk Profil (index 3)
         ],
       ),
       bottomNavigationBar: _buildBottomNavBar(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAddTransactionDialog();
-        },
+        onPressed: _showAddTransactionDialog, // Panggil fungsi dialog yang baru
         backgroundColor: const Color(0xFF3A4276),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
@@ -125,31 +176,20 @@ class _MainScreenState extends State<MainScreen> {
             _navItem(Icons.home_filled, 'Home', _selectedIndex == 0, () {
               _onItemTapped(0);
             }),
+            _navItem(Icons.bar_chart_rounded, 'Statistic', _selectedIndex == 1,
+                () {
+              _onItemTapped(1);
+            }),
+            const SizedBox(width: 40), // Spasi untuk FAB
+            _navItem(Icons.star_border_rounded, 'Wishlist', _selectedIndex == 2,
+                () {
+              _onItemTapped(2); // Koreksi indeks
+            }),
             _navItem(
-              Icons.bar_chart_rounded,
-              'Statistic',
-              _selectedIndex == 1,
-              () {
-                _onItemTapped(1);
-              },
-            ),
-            const SizedBox(width: 40), // Space for FAB
-            _navItem(
-              Icons.star_border_rounded,
-              'Wishlist',
-              _selectedIndex == 2,
-              () {
-                _onItemTapped(3);
-              },
-            ),
-            _navItem(
-              Icons.person_outline_rounded,
-              'Profil',
-              _selectedIndex == 3,
-              () {
-                _onItemTapped(4);
-              },
-            ),
+                Icons.person_outline_rounded, 'Profil', _selectedIndex == 3,
+                () {
+              _onItemTapped(3); // Koreksi indeks
+            }),
           ],
         ),
       ),
