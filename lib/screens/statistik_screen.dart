@@ -41,19 +41,16 @@ class _StatistikScreenState extends State<StatistikScreen> {
     });
 
     try {
-      // Load transactions from the selected date range
       final transactions = await TransactionService()
           .getTransactionsByDateRange(_startDate, _endDate);
 
-      // Separate income and expense transactions
       final incomeTransactions = transactions
-          .where((t) => t.type == 'income')
+          .where((t) => t.type == 'pemasukan') // Diubah dari 'income'
           .toList();
       final expenseTransactions = transactions
-          .where((t) => t.type == 'expense')
+          .where((t) => t.type == 'pengeluaran') // Diubah dari 'expense'
           .toList();
 
-      // Calculate totals
       final totalIncome = incomeTransactions.fold<double>(
         0,
         (sum, item) => sum + item.amount,
@@ -63,7 +60,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
         (sum, item) => sum + item.amount,
       );
 
-      // Create bar chart data based on real data
       final barGroups = _createBarGroups(transactions);
 
       setState(() {
@@ -85,14 +81,15 @@ class _StatistikScreenState extends State<StatistikScreen> {
   }
 
   List<BarChartGroupData> _createBarGroups(List<Transaction> transactions) {
-    // Group transactions by month
     final Map<int, Map<String, double>> monthlyData = {};
 
     for (var transaction in transactions) {
-      final month = transaction.date.month - 1; // 0-indexed for chart
+      final month = transaction.date.month - 1;
       monthlyData.putIfAbsent(month, () => {'income': 0, 'expense': 0});
 
-      if (transaction.type == 'income') {
+      // --- PERBAIKAN 1: Menggunakan 'pemasukan' ---
+      if (transaction.type == 'pemasukan') {
+        // Diubah dari 'income'
         monthlyData[month]!['income'] =
             (monthlyData[month]!['income'] ?? 0) + transaction.amount;
       } else {
@@ -101,23 +98,18 @@ class _StatistikScreenState extends State<StatistikScreen> {
       }
     }
 
-    // Find the maximum amount to scale the chart
     double maxAmount = 0;
     monthlyData.forEach((_, data) {
       if ((data['income'] ?? 0) > maxAmount) maxAmount = data['income']!;
       if ((data['expense'] ?? 0) > maxAmount) maxAmount = data['expense']!;
     });
 
-    // Scale amounts to fit in 0-6 range for the chart
     final scale = maxAmount > 0 ? 6 / maxAmount : 1;
-
-    // Create bar groups
     final List<BarChartGroupData> groups = [];
 
     for (int i = 0; i < 5; i++) {
       final income = monthlyData[i]?['income'] ?? 0;
       final expense = monthlyData[i]?['expense'] ?? 0;
-
       groups.add(makeGroupData(i, income * scale, expense * scale));
     }
 
@@ -127,8 +119,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
   void _updateTimeFrame(String timeFrame) {
     setState(() {
       _selectedTimeFrame = timeFrame;
-
-      // Update date range based on selected time frame
       switch (timeFrame) {
         case 'Weekly':
           _startDate = DateTime.now().subtract(const Duration(days: 7));
@@ -140,23 +130,18 @@ class _StatistikScreenState extends State<StatistikScreen> {
           _startDate = DateTime.now().subtract(const Duration(days: 365));
           break;
       }
-
       _endDate = DateTime.now();
     });
-
     _loadTransactions();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Format mata uang Rupiah
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp.',
       decimalDigits: 0,
     );
-
-    // Format tanggal range
     final dateFormatter = DateFormat('d MMM yyyy', 'id_ID');
     final dateRangeText =
         '${dateFormatter.format(_startDate)} - ${dateFormatter.format(_endDate)}';
@@ -184,7 +169,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
           : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                // Header Tanggal dan Filter
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -224,13 +208,11 @@ class _StatistikScreenState extends State<StatistikScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Bar Chart
                 SizedBox(
                   height: 250,
                   child: BarChart(
                     BarChartData(
-                      maxY: 8, // Maksimal Y dalam Juta (JT)
+                      maxY: 8,
                       barTouchData: BarTouchData(
                         touchTooltipData: BarTouchTooltipData(
                           getTooltipColor: (group) => Colors.grey,
@@ -267,8 +249,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Total Pemasukan & Pengeluaran
                 Row(
                   children: [
                     Expanded(
@@ -293,32 +273,27 @@ class _StatistikScreenState extends State<StatistikScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Riwayat Transaksi
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Riwayat Transaksi',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      'Semua Transaksi',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
+                    // Teks 'Semua Transaksi' dihapus karena daftar di bawah sudah mewakili
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Display recent transactions
                 if (_transactions.isEmpty)
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(16.0),
-                      child: Text('Tidak ada transaksi'),
+                      child: Text(
+                        'Tidak ada transaksi pada rentang waktu ini.',
+                      ),
                     ),
                   )
                 else
@@ -329,15 +304,18 @@ class _StatistikScreenState extends State<StatistikScreen> {
                       return Column(
                         children: [
                           _buildTransactionItem(
-                            transaction.category,
-                            transaction.type == 'income'
+                            // --- PERBAIKAN 2: Menggunakan 'description' bukan 'category' ---
+                            transaction.description,
+                            transaction.type == 'pemasukan'
                                 ? 'Pemasukan'
                                 : 'Pengeluaran',
                             transaction.amount,
                             currencyFormatter,
-                            transaction.type == 'income',
+                            // --- PERBAIKAN 1: Cek 'pemasukan' bukan 'income' ---
+                            transaction.type == 'pemasukan',
                           ),
-                          if (index < _transactions.length - 1) const Divider(),
+                          if (index < _transactions.length - 1 && index < 4)
+                            const Divider(),
                         ],
                       );
                     },
@@ -347,7 +325,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
     );
   }
 
-  // Widget untuk judul di sumbu Y (kiri)
   Widget leftTitles(double value, TitleMeta meta) {
     String text;
     if (value == 0) {
@@ -371,9 +348,9 @@ class _StatistikScreenState extends State<StatistikScreen> {
     );
   }
 
-  // Widget untuk judul di sumbu X (bawah)
   Widget bottomTitles(double value, TitleMeta meta) {
     final titles = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+    if (value.toInt() >= titles.length) return Container();
     final Widget text = Text(
       titles[value.toInt()],
       style: const TextStyle(color: Colors.grey, fontSize: 14),
@@ -381,7 +358,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
     return SideTitleWidget(axisSide: meta.axisSide, space: 16, child: text);
   }
 
-  // Fungsi untuk membuat data grup bar
   BarChartGroupData makeGroupData(int x, double y1, double y2) {
     return BarChartGroupData(
       barsSpace: 4,
@@ -403,7 +379,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
     );
   }
 
-  // Widget untuk card ringkasan (Pemasukan/Pengeluaran)
   Widget _buildSummaryCard(
     IconData icon,
     String title,
@@ -446,7 +421,6 @@ class _StatistikScreenState extends State<StatistikScreen> {
     );
   }
 
-  // Widget untuk item riwayat transaksi
   Widget _buildTransactionItem(
     String category,
     String type,
@@ -463,7 +437,7 @@ class _StatistikScreenState extends State<StatistikScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  category,
+                  category, // Nama parameter tetap 'category' untuk menjaga struktur
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

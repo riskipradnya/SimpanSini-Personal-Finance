@@ -1,74 +1,37 @@
+// lib/services/transaction_service.dart
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/transaction_model.dart';
+import '../models/transaction_model.dart'; // Pastikan path ini benar
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TransactionService {
-  // Base URL untuk API
-  final String _baseUrl =
-      "http://localhost/api_keuangan"; // Ganti dengan URL API Anda
+  final String _baseUrl = "http://localhost/api_keuangan";
 
-  // Mendapatkan user ID dari shared preferences
+  // Mendapatkan user ID dari SharedPreferences
   Future<int> _getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id') ?? 0;
   }
 
-  // Mendapatkan semua transaksi untuk pengguna
-  Future<List<Transaction>> getAllTransactions() async {
-    final userId = await _getUserId();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/transactions.php?user_id=$userId'),
-    );
-
-    if (response.statusCode == 200) {
-      try {
-        // Cek apakah response body diawali dengan karakter '{' (JSON) atau tidak
-        if (response.body.trim().startsWith('{')) {
-          final data = json.decode(response.body);
-          if (data is Map<String, dynamic> && data['status'] == 'success') {
-            return (data['data'] as List)
-                .map((item) => Transaction.fromJson(item))
-                .toList();
-          } else {
-            return [];
-          }
-        } else {
-          print('Unexpected response format in getAllTransactions:');
-          print('Response body: ${response.body}');
-          return [];
-        }
-      } on FormatException catch (e) {
-        // Ini akan menangkap error jika respon bukan JSON yang valid
-        print('Error parsing JSON from getAllTransactions: $e');
-        print(
-          'Response body: ${response.body}',
-        ); // Tampilkan respon asli dari server
-        return []; // Kembalikan list kosong agar aplikasi tidak crash
-      }
-    } else {
-      throw Exception('Failed to load transactions');
-    }
-  }
-
-  // Menambah transaksi baru
+  // --- FUNGSI UNTUK MENAMBAH TRANSAKSI (PEMASUKAN & PENGELUARAN) ---
+  /// Menambah transaksi baru (pemasukan atau pengeluaran).
   Future<Map<String, dynamic>> addTransaction(Transaction transaction) async {
+    // Ambil user_id dan gabungkan dengan data transaksi
+    final transactionData = transaction.toJson();
+    transactionData['user_id'] = await _getUserId();
+
+    // Mengirim data ke satu endpoint universal: add_transaction.php
     final response = await http.post(
       Uri.parse('$_baseUrl/add_transaction.php'),
-      body: transaction.toJson().map(
-        (key, value) => MapEntry(key, value?.toString() ?? ''),
-      ),
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      body: json.encode(transactionData),
     );
+
     if (response.statusCode == 200) {
       try {
-        if (response.body.trim().startsWith('{')) {
-          return json.decode(response.body);
-        } else {
-          print('Unexpected response format in addTransaction:');
-          print('Response body: ${response.body}');
-          return {'status': 'error', 'message': 'Invalid response from server'};
-        }
-      } on FormatException catch (e) {
+        return json.decode(response.body);
+      } catch (e) {
         print('Error parsing JSON from addTransaction: $e');
         print('Response body: ${response.body}');
         return {'status': 'error', 'message': 'Invalid response from server'};
@@ -78,99 +41,82 @@ class TransactionService {
     }
   }
 
-  // Mendapatkan transaksi berdasarkan tipe (pemasukan atau pengeluaran)
+  // --- FUNGSI UNTUK MENGAMBIL DATA TRANSAKSI ---
+
+  /// Mengambil dan memproses daftar transaksi dari URL yang diberikan.
+  Future<List<Transaction>> _fetchAndParseTransactions(Uri uri) async {
+    final response = await http.get(uri);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to load transactions. Status code: ${response.statusCode}',
+      );
+    }
+
+    try {
+      if (response.body.trim().startsWith('{')) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic> && data['status'] == 'success') {
+          final List<dynamic> transactionData = data['data'];
+          return transactionData
+              .map((item) => Transaction.fromJson(item))
+              .toList();
+        }
+      }
+      print('Unexpected or unsuccessful response format: ${response.body}');
+      return [];
+    } on FormatException catch (e) {
+      print('Error parsing JSON: $e');
+      print('Response body: ${response.body}');
+      return [];
+    }
+  }
+
+  /// Mendapatkan semua transaksi untuk pengguna.
+  Future<List<Transaction>> getAllTransactions() async {
+    final userId = await _getUserId();
+    final uri = Uri.parse('$_baseUrl/transactions.php?user_id=$userId');
+    return _fetchAndParseTransactions(uri);
+  }
+
+  /// Mendapatkan transaksi berdasarkan tipe (pemasukan atau pengeluaran).
   Future<List<Transaction>> getTransactionsByType(String type) async {
     final userId = await _getUserId();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/transactions.php?user_id=$userId&type=$type'),
+    final uri = Uri.parse(
+      '$_baseUrl/transactions.php?user_id=$userId&type=$type',
     );
-
-    if (response.statusCode == 200) {
-      try {
-        if (response.body.trim().startsWith('{')) {
-          final data = json.decode(response.body);
-          if (data['status'] == 'success') {
-            return (data['data'] as List)
-                .map((item) => Transaction.fromJson(item))
-                .toList();
-          } else {
-            return [];
-          }
-        } else {
-          print('Unexpected response format in getTransactionsByType:');
-          print('Response body: ${response.body}');
-          return [];
-        }
-      } on FormatException catch (e) {
-        print('Error parsing JSON from getTransactionsByType: $e');
-        print('Response body: ${response.body}');
-        return [];
-      }
-    } else {
-      throw Exception('Failed to load transactions');
-    }
-    // Ensure a return value for all code paths
-    return [];
+    return _fetchAndParseTransactions(uri);
   }
 
-  // Mendapatkan transaksi berdasarkan rentang tanggal
+  /// Mendapatkan transaksi berdasarkan rentang tanggal.
   Future<List<Transaction>> getTransactionsByDateRange(
-    DateTime start,
-    DateTime end,
+    DateTime startDate,
+    DateTime endDate,
   ) async {
     final userId = await _getUserId();
-    final startDate = start.toIso8601String().split('T')[0];
-    final endDate = end.toIso8601String().split('T')[0];
 
-    final response = await http.get(
-      Uri.parse(
-        '$_baseUrl/transactions.php?user_id=$userId&start_date=$startDate&end_date=$endDate',
-      ),
+    // Format dates to YYYY-MM-DD
+    String formattedStartDate =
+        "${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}";
+    String formattedEndDate =
+        "${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}";
+
+    final uri = Uri.parse(
+      '$_baseUrl/transactions.php?user_id=$userId&start_date=$formattedStartDate&end_date=$formattedEndDate',
     );
 
-    if (response.statusCode == 200) {
-      try {
-        if (response.body.trim().startsWith('{')) {
-          final data = json.decode(response.body);
-          if (data['status'] == 'success') {
-            return (data['data'] as List)
-                .map((item) => Transaction.fromJson(item))
-                .toList();
-          } else {
-            return [];
-          }
-        } else {
-          print('Unexpected response format in getTransactionsByDateRange:');
-          print('Response body: ${response.body}');
-          return [];
-        }
-      } on FormatException catch (e) {
-        print('Error parsing JSON from getTransactionsByDateRange: $e');
-        print('Response body: ${response.body}');
-        return [];
-      }
-    } else {
-      throw Exception('Failed to load transactions');
-    }
+    // If the API endpoint doesn't support date filtering yet, we'll fetch all transactions
+    // and filter them in the client side
+    final allTransactions = await _fetchAndParseTransactions(uri);
+
+    // Client-side filtering by date
+    return allTransactions.where((transaction) {
+      return transaction.date.isAfter(
+            startDate.subtract(const Duration(days: 1)),
+          ) &&
+          transaction.date.isBefore(endDate.add(const Duration(days: 1)));
+    }).toList();
   }
 
-  // Mendapatkan ringkasan transaksi (untuk grafik)
-  Future<Map<String, dynamic>> getTransactionSummary() async {
-    final userId = await _getUserId();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/transaction_summary.php?user_id=$userId'),
-    );
-
-    if (response.statusCode == 200) {
-      try {
-        return json.decode(response.body);
-      } on FormatException catch (e) {
-        print('Error parsing JSON from getTransactionSummary: $e');
-        print('Response body: ${response.body}');
-        throw Exception('Invalid summary data from server');
-      }
-    } else {
-      throw Exception('Failed to load transaction summary');
-    }
-  }
+  // Fungsi lainnya tetap sama...
 }

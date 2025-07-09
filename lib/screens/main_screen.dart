@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/bottom_navigation.dart';
+import 'profile_screen.dart';
 import 'home_screen.dart'; // Changed from package import to relative path
 import 'pemasukan_screen.dart'; // Changed from package import to relative path
 import 'pengeluaran_screen.dart'; // Changed from package import to relative path
 import 'statistik_screen.dart'; // Changed from package import to relative path
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-  late PageController _pageController;
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const StatistikScreen(),
+    Center(child: Text('Add Placeholder')), // Placeholder for index 2
+    const ProfileScreen(),
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: _selectedIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _onItemTapped(int index) {
-    if (index == 2) {
-      _showAddTransactionDialog();
-    } else {
-      setState(() {
-        _selectedIndex = index;
-        _pageController.jumpToPage(index);
-      });
-    }
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: _buildBottomNavBar(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddTransactionDialog();
+        },
+        backgroundColor: const Color(0xFF3A4276),
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
   }
 
   void _showAddTransactionDialog() {
@@ -81,36 +84,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        children: const <Widget>[
-          HomeScreen(),
-          StatistikScreen(),
-          Center(child: Text('Add Placeholder')), // Placeholder for index 2
-          Center(child: Text('Profile')),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAddTransactionDialog();
-        },
-        backgroundColor: const Color(0xFF3A4276),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
   Widget _buildBottomNavBar() {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
@@ -122,32 +95,40 @@ class _MainScreenState extends State<MainScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _navItem(Icons.home_filled, 'Home', _selectedIndex == 0, () {
-              _onItemTapped(0);
+            _navItem(Icons.home_filled, 'Home', _currentIndex == 0, () {
+              setState(() {
+                _currentIndex = 0;
+              });
             }),
             _navItem(
               Icons.bar_chart_rounded,
               'Statistic',
-              _selectedIndex == 1,
+              _currentIndex == 1,
               () {
-                _onItemTapped(1);
+                setState(() {
+                  _currentIndex = 1;
+                });
               },
             ),
             const SizedBox(width: 40), // Space for FAB
             _navItem(
               Icons.star_border_rounded,
               'Wishlist',
-              _selectedIndex == 2,
+              _currentIndex == 2,
               () {
-                _onItemTapped(3);
+                setState(() {
+                  _currentIndex = 2;
+                });
               },
             ),
             _navItem(
               Icons.person_outline_rounded,
               'Profil',
-              _selectedIndex == 3,
+              _currentIndex == 3,
               () {
-                _onItemTapped(4);
+                setState(() {
+                  _currentIndex = 3;
+                });
               },
             ),
           ],
@@ -182,5 +163,42 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+  }
+}
+
+// Placeholder screens - replace with your actual screens
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('Home Screen')));
+  }
+}
+
+class StatistikScreen extends StatelessWidget {
+  const StatistikScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('Statistic Screen')));
+  }
+}
+
+class AddTransactionScreen extends StatelessWidget {
+  const AddTransactionScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('Add Transaction Screen')));
+  }
+}
+
+class WishlistScreen extends StatelessWidget {
+  const WishlistScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('Wishlist Screen')));
   }
 }
