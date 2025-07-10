@@ -1,4 +1,7 @@
+// main_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // <-- IMPORT BARU
 import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'pemasukan_screen.dart';
@@ -13,10 +16,11 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  // Indeks untuk PageView, dimulai dari 0.
-  // Home: 0, Statistik: 1, Wishlist: 2, Profil: 3
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
   late PageController _pageController;
+
+  // --- GANTI KEY DENGAN VALUE NOTIFIER INI ---
+  final ValueNotifier<int> _refreshNotifier = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -27,8 +31,11 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _refreshNotifier.dispose(); // <-- JANGAN LUPA DISPOSE
     super.dispose();
   }
+
+  // --- FUNGSI _refreshPages() BISA DIHAPUS, KITA TIDAK MEMBUTUHKANNYA LAGI ---
 
   void _onItemTapped(int index) {
     setState(() {
@@ -36,94 +43,63 @@ class _MainScreenState extends State<MainScreen> {
       _pageController.jumpToPage(index);
     });
   }
-
-  // Menggunakan showDialog untuk popup di tengah layar
+  
   void _showAddTransactionDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.0),
-          ),
+          // ... (kode dialog tidak berubah)
           child: Container(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                // Baris untuk Judul dan Tombol Close (X)
+                // ... (Judul dan tombol close tidak berubah)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Pilih Jenis Transaksi',
-                      style: GoogleFonts.manrope(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+                    Text('Pilih Jenis Transaksi', style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold,),),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop(),),
                   ],
                 ),
-                const SizedBox(height: 24), // Spasi
-
-                // Tombol Pemasukan
+                const SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3A4276),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Tutup dialog
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const PemasukanScreen()),
-                    );
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const PemasukanScreen()),);
+                    
+                    // --- UBAH LOGIKA REFRESH DI SINI ---
+                    if (result == true) {
+                      // Cukup naikkan nilai notifier untuk memicu refresh di child
+                      _refreshNotifier.value++;
+                    }
                   },
-                  child: Text(
-                    'Pemasukan',
-                    style: GoogleFonts.manrope(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Text('Pemasukan', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white,),),
                 ),
-                const SizedBox(height: 16), // Spasi
-
-                // Tombol Pengeluaran
+                const SizedBox(height: 16),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: BorderSide(color: Colors.grey[400]!),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Tutup dialog
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const PengeluaranScreen()),
-                    );
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const PengeluaranScreen()),);
+                    
+                    // --- UBAH LOGIKA REFRESH DI SINI JUGA ---
+                    if (result == true) {
+                      _refreshNotifier.value++;
+                    }
                   },
-                  child: Text(
-                    'Pengeluaran',
-                    style: GoogleFonts.manrope(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  child: Text('Pengeluaran', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87,),),
                 ),
               ],
             ),
@@ -143,18 +119,19 @@ class _MainScreenState extends State<MainScreen> {
             _selectedIndex = index;
           });
         },
-        // Pastikan jumlah children sesuai dengan jumlah item di nav bar
-        children: const <Widget>[
-          HomeScreen(),
-          StatistikScreen(),
-          Center(child: Text('Wishlist')), // Halaman untuk Wishlist (index 2)
-          Center(child: Text('Profile')),  // Halaman untuk Profil (index 3)
+        // --- UBAH CARA KITA MEMBERIKAN WIDGET DI SINI ---
+        children: <Widget>[
+          HomeScreen(refreshNotifier: _refreshNotifier),
+          StatistikScreen(refreshNotifier: _refreshNotifier),
+          const Center(child: Text('Wishlist')),
+          const Center(child: Text('Profile')),
         ],
       ),
+      // ... (Sisa kode (BottomNavBar, FAB, dll) tidak perlu diubah) ...
       bottomNavigationBar: _buildBottomNavBar(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTransactionDialog, // Panggil fungsi dialog yang baru
+        onPressed: _showAddTransactionDialog,
         backgroundColor: const Color(0xFF3A4276),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
@@ -162,9 +139,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  // ... (Sisa kode _buildBottomNavBar dan _navItem tidak perlu diubah) ...
   Widget _buildBottomNavBar() {
+    // Kode ini tetap sama
     return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
+      // shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
       color: Colors.white,
       elevation: 10,
@@ -180,15 +159,15 @@ class _MainScreenState extends State<MainScreen> {
                 () {
               _onItemTapped(1);
             }),
-            const SizedBox(width: 40), // Spasi untuk FAB
+            const SizedBox(width: 40),
             _navItem(Icons.star_border_rounded, 'Wishlist', _selectedIndex == 2,
                 () {
-              _onItemTapped(2); // Koreksi indeks
+              _onItemTapped(2);
             }),
             _navItem(
                 Icons.person_outline_rounded, 'Profil', _selectedIndex == 3,
                 () {
-              _onItemTapped(3); // Koreksi indeks
+              _onItemTapped(3);
             }),
           ],
         ),
@@ -202,6 +181,7 @@ class _MainScreenState extends State<MainScreen> {
     bool isActive,
     VoidCallback onTap,
   ) {
+    // Kode ini tetap sama
     final color = isActive ? const Color(0xFF3A4276) : Colors.grey[400];
     return Expanded(
       child: InkWell(

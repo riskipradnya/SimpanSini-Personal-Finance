@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class TransactionService {
   // Base URL untuk API
   final String _baseUrl =
-      "http://localhost/api_keuangan"; // Ganti dengan URL API Anda
+      "http://192.168.110.145/api_keuangan"; // Ganti dengan URL API Anda
 
   // Mendapatkan user ID dari shared preferences
   Future<int> _getUserId() async {
@@ -52,13 +52,19 @@ class TransactionService {
   }
 
   // Menambah transaksi baru
+  // Menambah transaksi baru
   Future<Map<String, dynamic>> addTransaction(Transaction transaction) async {
+    // Mengonversi objek Transaction ke Map<String, dynamic> menggunakan toJson()
+    final Map<String, dynamic> transactionData = transaction.toJson();
+
     final response = await http.post(
       Uri.parse('$_baseUrl/add_transaction.php'),
-      body: transaction.toJson().map(
-        (key, value) => MapEntry(key, value?.toString() ?? ''),
-      ),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8', // Penting: Menetapkan Content-Type
+      },
+      body: jsonEncode(transactionData), // Penting: Mengonversi Map ke string JSON
     );
+
     if (response.statusCode == 200) {
       try {
         if (response.body.trim().startsWith('{')) {
@@ -74,7 +80,10 @@ class TransactionService {
         return {'status': 'error', 'message': 'Invalid response from server'};
       }
     } else {
-      return {'status': 'error', 'message': 'Failed to connect to the server'};
+      // Lebih detail dalam error handling status code non-200
+      print('Failed to add transaction. Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      return {'status': 'error', 'message': 'Failed to connect to the server or server error: ${response.statusCode}'};
     }
   }
 

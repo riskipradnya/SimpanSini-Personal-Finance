@@ -46,17 +46,16 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     }
   }
 
-  // == FUNGSI BARU UNTUK MENAMPILKAN DIALOG KONFIRMASI ==
   Future<void> _showConfirmationDialog() async {
-    // 1. Validasi input sebelum menampilkan dialog (opsional, tapi disarankan)
     if (_amountController.text.isEmpty) {
+      // Pengecekan mounted sebelum menampilkan SnackBar
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Jumlah tidak boleh kosong')),
       );
       return;
     }
 
-    // 2. Siapkan data transaksi dari form
     String amountStr = _amountController.text
         .replaceAll('Rp', '')
         .replaceAll('.', '')
@@ -65,7 +64,7 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     double amount = double.tryParse(amountStr) ?? 0.0;
 
     final transaction = Transaction(
-      userId: 0, // userId akan di-set nanti saat eksekusi
+      userId: 0,
       type: 'income',
       category: _selectedCategory,
       description: _descriptionController.text,
@@ -73,23 +72,21 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
       date: _selectedDate,
     );
 
-    // 3. Tampilkan dialog dan tunggu hasilnya (true/false)
     final bool? isConfirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationScreen(
         transaction: transaction,
-        title: 'Total Pemasukan', // <-- LENGKAPI DENGAN INI
-        icon: Icons.upload_rounded,  // <-- LENGKAPI DENGAN INI
+        title: 'Total Pemasukan',
+        icon: Icons.upload_rounded,
       ),
     );
 
-    // 4. Jika user menekan "Simpan" (isConfirmed == true), eksekusi penyimpanan
     if (isConfirmed == true) {
       _executeSave(transaction);
     }
   }
 
-  // == FUNGSI BARU UNTUK EKSEKUSI PENYIMPANAN KE DATABASE ==
+  // == FUNGSI YANG DIPERBAIKI ==
   Future<void> _executeSave(Transaction transaction) async {
     setState(() {
       _isLoading = true;
@@ -100,12 +97,13 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
       final userId = prefs.getInt('user_id') ?? 0;
 
       if (userId == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('User tidak ditemukan')));
+        // PENGECEKAN BARU
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
         return;
       }
 
-      // Buat objek baru dengan userId yang benar
       final finalTransaction = Transaction(
         userId: userId,
         type: transaction.type,
@@ -117,21 +115,33 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
 
       final result = await TransactionService().addTransaction(finalTransaction);
 
+      // PENGECEKAN BARU DITAMBAHKAN DI SINI
+      if (!mounted) return;
+
       if (result['status'] == 'success') {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(result['message'])));
+        
+        // Cek lagi sebelum pop
+        if (!mounted) return;
         Navigator.pop(context, true);
+
       } else {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
       }
     } catch (e) {
+      // PENGECEKAN BARU
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // PENGECEKAN BARU
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -234,7 +244,6 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
               ),
             ),
             const Spacer(),
-            // Tombol Simpan sekarang memanggil dialog
             ElevatedButton(
               onPressed: _isLoading ? null : _showConfirmationDialog,
               style: ElevatedButton.styleFrom(

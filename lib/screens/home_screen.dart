@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +8,13 @@ import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  // 1. Terima ValueNotifier dari parent widget (MainScreen)
+  final ValueNotifier<int> refreshNotifier;
+
+  const HomeScreen({
+    super.key,
+    required this.refreshNotifier,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -18,35 +25,44 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Transaction> _allTransactions = [];
 
+  // Data dummy tetap ada sebagai fallback
   final List<FlSpot> _dummyIncomeSpots = [
-    const FlSpot(0, 3.1),
-    const FlSpot(2, 4.5),
-    const FlSpot(4, 3.8),
-    const FlSpot(6, 5),
-    const FlSpot(8, 3.5),
-    const FlSpot(10, 4.2),
+    const FlSpot(0, 3.1), const FlSpot(2, 4.5), const FlSpot(4, 3.8),
+    const FlSpot(6, 5), const FlSpot(8, 3.5), const FlSpot(10, 4.2),
   ];
   final List<FlSpot> _dummyExpenseSpots = [
-    const FlSpot(0, 2.2),
-    const FlSpot(2, 2.8),
-    const FlSpot(4, 2.1),
-    const FlSpot(6, 3.4),
-    const FlSpot(8, 2.5),
-    const FlSpot(10, 3.0),
+    const FlSpot(0, 2.2), const FlSpot(2, 2.8), const FlSpot(4, 2.1),
+    const FlSpot(6, 3.4), const FlSpot(8, 2.5), const FlSpot(10, 3.0),
   ];
 
   @override
   void initState() {
     super.initState();
+    // 2. Daftarkan fungsi _loadData untuk "mendengarkan" perubahan pada notifier
+    widget.refreshNotifier.addListener(_loadData);
+    
+    // 3. Panggil _loadData() saat halaman pertama kali dibuat
     _loadData();
   }
 
+  @override
+  void dispose() {
+    // 4. Hapus listener untuk mencegah memory leak saat halaman dihancurkan
+    widget.refreshNotifier.removeListener(_loadData);
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
+    // Tambahkan pengecekan 'mounted' untuk memastikan state masih ada
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
+
     await _loadUserData();
     await _loadTransactions();
+
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
     });
@@ -72,10 +88,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('Error loading transactions: $e');
-      if (mounted)
+      if (mounted) {
         setState(() {
           _allTransactions = [];
         });
+      }
     }
   }
 
@@ -83,15 +100,15 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_allTransactions.isEmpty) {
       return type == 'income' ? _dummyIncomeSpots : _dummyExpenseSpots;
     }
-    final filteredTransactions = _allTransactions
-        .where((t) => t.type == type)
-        .toList();
+    final filteredTransactions =
+        _allTransactions.where((t) => t.type == type).toList();
     if (filteredTransactions.length < 2) {
       return type == 'income' ? _dummyIncomeSpots : _dummyExpenseSpots;
     }
     return List.generate(filteredTransactions.length, (index) {
       final transaction = filteredTransactions[index];
-      final yValue = transaction.amount / 100000;
+      // Hindari pembagian dengan nol jika amount adalah 0
+      final yValue = transaction.amount > 0 ? transaction.amount / 100000 : 0.0;
       return FlSpot(index.toDouble(), yValue);
     });
   }
@@ -149,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
             radius: 22,
             backgroundColor: Colors.grey[300],
             child: Icon(Icons.person, color: Colors.grey[700], size: 30),
-            // Replacing network image with icon to avoid SocketException
           ),
           const SizedBox(width: 12),
           Column(
@@ -212,7 +228,6 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(
           height: 200,
           child: LineChart(
-            // Cukup panggil method _mainChartData()
             _mainChartData(),
           ),
         ),
@@ -222,7 +237,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   LineChartData _mainChartData() {
     return LineChartData(
-      // Animation duration is not a valid parameter here
       gridData: const FlGridData(show: false),
       titlesData: FlTitlesData(
         show: true,
@@ -255,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final amount = (spot.y * 100000).toInt();
               final formatter = NumberFormat.currency(
                 locale: 'id_ID',
-                symbol: 'Rp',
+                symbol: 'Rp ',
                 decimalDigits: 0,
               );
               return LineTooltipItem(

@@ -37,7 +37,9 @@ class Transaction {
       'category': category,
       'description': description,
       'amount': amount,
-      'date': date.toIso8601String().split('T')[0],
+      // --- UBAH BARIS INI ---
+      // Kirim tanggal lengkap dalam format ISO8601
+      'date': date.toIso8601String(), 
     };
   }
 }
