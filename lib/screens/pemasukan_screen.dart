@@ -5,7 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'confirmation_screen.dart'; // <-- IMPORT FILE BARU
+import 'confirmation_screen.dart';
 
 class PemasukanScreen extends StatefulWidget {
   const PemasukanScreen({super.key});
@@ -21,7 +21,7 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
   );
   final TextEditingController _descriptionController = TextEditingController();
   String _selectedCategory = 'Gaji';
-  DateTime _selectedDate = DateTime.now(); // Dibuat non-nullable
+  DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
   @override
@@ -48,7 +48,6 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
 
   Future<void> _showConfirmationDialog() async {
     if (_amountController.text.isEmpty) {
-      // Pengecekan mounted sebelum menampilkan SnackBar
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Jumlah tidak boleh kosong')),
@@ -86,7 +85,6 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     }
   }
 
-  // == FUNGSI YANG DIPERBAIKI ==
   Future<void> _executeSave(Transaction transaction) async {
     setState(() {
       _isLoading = true;
@@ -97,7 +95,6 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
       final userId = prefs.getInt('user_id') ?? 0;
 
       if (userId == 0) {
-        // PENGECEKAN BARU
         if (!mounted) return;
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
@@ -115,28 +112,22 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
 
       final result = await TransactionService().addTransaction(finalTransaction);
 
-      // PENGECEKAN BARU DITAMBAHKAN DI SINI
       if (!mounted) return;
 
       if (result['status'] == 'success') {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(result['message'])));
-        
-        // Cek lagi sebelum pop
         if (!mounted) return;
         Navigator.pop(context, true);
-
       } else {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
       }
     } catch (e) {
-      // PENGECEKAN BARU
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      // PENGECEKAN BARU
       if (mounted) {
         setState(() {
           _isLoading = false;
