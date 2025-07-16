@@ -1,4 +1,4 @@
-// main_screen.dart
+// lib/screens/main_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +6,7 @@ import 'home_screen.dart';
 import 'pemasukan_screen.dart';
 import 'pengeluaran_screen.dart';
 import 'statistik_screen.dart';
+import 'profil_screen.dart'; // Import ProfileScreen
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -34,12 +35,17 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      _pageController.jumpToPage(index);
-    });
+    // Jika index adalah item FAB dummy (index 2), jangan ganti halaman, tapi tampilkan dialog
+    if (index == 2) {
+      _showAddTransactionDialog();
+    } else {
+      setState(() {
+        _selectedIndex = index;
+        _pageController.jumpToPage(index);
+      });
+    }
   }
-  
+
   void _showAddTransactionDialog() {
     showDialog(
       context: context,
@@ -108,18 +114,19 @@ class _MainScreenState extends State<MainScreen> {
             _selectedIndex = index;
           });
         },
+        // List halaman yang akan ditampilkan di PageView
         children: <Widget>[
           HomeScreen(refreshNotifier: _refreshNotifier),
           StatistikScreen(refreshNotifier: _refreshNotifier),
-          const Center(child: Text('Wishlist')),
-          const Center(child: Text('Profile')),
+          const Center(child: Text('Add Transaction Placeholder')), // Ini adalah placeholder untuk FAB, tidak akan pernah ditampilkan langsung
+          const Center(child: Text('Wishlist')), // Tetap pada indeks 3
+          const ProfileScreen(), // ProfileScreen pada indeks 4
         ],
       ),
-      // --- GANTI BOTTOMAPPBAR MENJADI BOTTOMNAVIGATIONBAR ---
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // Penting jika item lebih dari 3
+        type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFF3A4276),
         unselectedItemColor: Colors.grey[400],
@@ -140,7 +147,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.bar_chart_rounded),
             label: 'Statistic',
           ),
-          // Tambahkan item dummy untuk FAB jika Anda ingin tetap memiliki ruang di tengah
+          // Item dummy untuk FAB
           BottomNavigationBarItem(
             icon: SizedBox.shrink(), // Widget kosong
             label: '',
@@ -155,7 +162,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked, // TETAPKAN INI UNTUK MENEMPATKAN FAB DI TENGAH BOTTOMNAVBAR
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Builder(
         builder: (BuildContext context) {
           return FloatingActionButton(
