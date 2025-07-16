@@ -1,5 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
-// <-- IMPORT BARU
+import 'package:flutter/foundation.dart'; // <-- IMPORT BARU
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/transaction_service.dart';
