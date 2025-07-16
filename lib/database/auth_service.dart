@@ -6,7 +6,7 @@ class AuthService {
   // Ganti URL ini saat Anda sudah hosting
   // Untuk tes lokal, ganti dengan IP Address komputer Anda
   final String _baseUrl =
-      "http://192.168.110.145/api_keuangan"; // <-- GANTI DENGAN IP ANDA
+      "http://localhost/api_keuangan"; // <-- GANTI DENGAN IP ANDA
 
   // Fungsi untuk Registrasi (CREATE)
   Future<Map<String, dynamic>> signUp(
