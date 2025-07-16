@@ -1,7 +1,6 @@
 // main_screen.dart
-
 import 'package:flutter/material.dart';
-// <-- IMPORT BARU
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'pemasukan_screen.dart';
@@ -19,7 +18,6 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
-  // --- GANTI KEY DENGAN VALUE NOTIFIER INI ---
   final ValueNotifier<int> _refreshNotifier = ValueNotifier<int>(0);
 
   @override
@@ -31,11 +29,9 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    _refreshNotifier.dispose(); // <-- JANGAN LUPA DISPOSE
+    _refreshNotifier.dispose();
     super.dispose();
   }
-
-  // --- FUNGSI _refreshPages() BISA DIHAPUS, KITA TIDAK MEMBUTUHKANNYA LAGI ---
 
   void _onItemTapped(int index) {
     setState(() {
@@ -49,14 +45,12 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          // ... (kode dialog tidak berubah)
           child: Container(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                // ... (Judul dan tombol close tidak berubah)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -74,10 +68,7 @@ class _MainScreenState extends State<MainScreen> {
                   onPressed: () async {
                     Navigator.of(context).pop();
                     final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const PemasukanScreen()),);
-                    
-                    // --- UBAH LOGIKA REFRESH DI SINI ---
                     if (result == true) {
-                      // Cukup naikkan nilai notifier untuk memicu refresh di child
                       _refreshNotifier.value++;
                     }
                   },
@@ -93,8 +84,6 @@ class _MainScreenState extends State<MainScreen> {
                   onPressed: () async {
                     Navigator.of(context).pop();
                     final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const PengeluaranScreen()),);
-                    
-                    // --- UBAH LOGIKA REFRESH DI SINI JUGA ---
                     if (result == true) {
                       _refreshNotifier.value++;
                     }
@@ -119,7 +108,6 @@ class _MainScreenState extends State<MainScreen> {
             _selectedIndex = index;
           });
         },
-        // --- UBAH CARA KITA MEMBERIKAN WIDGET DI SINI ---
         children: <Widget>[
           HomeScreen(refreshNotifier: _refreshNotifier),
           StatistikScreen(refreshNotifier: _refreshNotifier),
@@ -127,79 +115,56 @@ class _MainScreenState extends State<MainScreen> {
           const Center(child: Text('Profile')),
         ],
       ),
-      // ... (Sisa kode (BottomNavBar, FAB, dll) tidak perlu diubah) ...
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTransactionDialog,
-        backgroundColor: const Color(0xFF3A4276),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  // ... (Sisa kode _buildBottomNavBar dan _navItem tidak perlu diubah) ...
-  Widget _buildBottomNavBar() {
-    // Kode ini tetap sama
-    return BottomAppBar(
-      // shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
-      color: Colors.white,
-      elevation: 10,
-      child: SizedBox(
-        height: 60,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _navItem(Icons.home_filled, 'Home', _selectedIndex == 0, () {
-              _onItemTapped(0);
-            }),
-            _navItem(Icons.bar_chart_rounded, 'Statistic', _selectedIndex == 1,
-                () {
-              _onItemTapped(1);
-            }),
-            const SizedBox(width: 40),
-            _navItem(Icons.star_border_rounded, 'Wishlist', _selectedIndex == 2,
-                () {
-              _onItemTapped(2);
-            }),
-            _navItem(
-                Icons.person_outline_rounded, 'Profil', _selectedIndex == 3,
-                () {
-              _onItemTapped(3);
-            }),
-          ],
+      // --- GANTI BOTTOMAPPBAR MENJADI BOTTOMNAVIGATIONBAR ---
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed, // Penting jika item lebih dari 3
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF3A4276),
+        unselectedItemColor: Colors.grey[400],
+        selectedLabelStyle: GoogleFonts.manrope(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
         ),
-      ),
-    );
-  }
-
-  Widget _navItem(
-    IconData icon,
-    String label,
-    bool isActive,
-    VoidCallback onTap,
-  ) {
-    // Kode ini tetap sama
-    final color = isActive ? const Color(0xFF3A4276) : Colors.grey[400];
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color),
-            Text(
-              label,
-              style: GoogleFonts.manrope(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
+        unselectedLabelStyle: GoogleFonts.manrope(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
         ),
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_filled),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_rounded),
+            label: 'Statistic',
+          ),
+          // Tambahkan item dummy untuk FAB jika Anda ingin tetap memiliki ruang di tengah
+          BottomNavigationBarItem(
+            icon: SizedBox.shrink(), // Widget kosong
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star_border_rounded),
+            label: 'Wishlist',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            label: 'Profile',
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked, // TETAPKAN INI UNTUK MENEMPATKAN FAB DI TENGAH BOTTOMNAVBAR
+      floatingActionButton: Builder(
+        builder: (BuildContext context) {
+          return FloatingActionButton(
+            onPressed: _showAddTransactionDialog,
+            backgroundColor: const Color(0xFF3A4276),
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add, color: Colors.white),
+          );
+        },
       ),
     );
   }
