@@ -21,7 +21,7 @@ class _StatistikScreenState extends State<StatistikScreen> {
 
   // Variabel state tidak berubah
   late List<BarChartGroupData> rawBarGroups;
-  late List<BarChartGroupData> showingBarGroups;
+  List<BarChartGroupData> showingBarGroups = [];
 
   List<Transaction> _transactions = [];
   List<Transaction> _incomeTransactions = [];
@@ -62,10 +62,12 @@ class _StatistikScreenState extends State<StatistikScreen> {
       final transactions = await TransactionService()
           .getTransactionsByDateRange(_startDate, _endDate);
 
-      final incomeTransactions =
-          transactions.where((t) => t.type == 'income').toList();
-      final expenseTransactions =
-          transactions.where((t) => t.type == 'expense').toList();
+      final incomeTransactions = transactions
+          .where((t) => t.type == 'income')
+          .toList();
+      final expenseTransactions = transactions
+          .where((t) => t.type == 'expense')
+          .toList();
 
       final totalIncome = incomeTransactions.fold<double>(
         0,
@@ -77,7 +79,7 @@ class _StatistikScreenState extends State<StatistikScreen> {
       );
 
       final barGroups = _createBarGroups(transactions);
-      
+
       // Tambahkan pengecekan mounted sebelum setState
       if (!mounted) return;
       setState(() {
@@ -121,18 +123,33 @@ class _StatistikScreenState extends State<StatistikScreen> {
       if ((data['expense'] ?? 0) > maxAmount) maxAmount = data['expense']!;
     });
 
-    final scale = maxAmount > 0 ? 8 / maxAmount : 1; // Sesuai maxY di BarChartData
+    final scale = maxAmount > 0
+        ? 8 / maxAmount
+        : 1; // Sesuai maxY di BarChartData
 
     final List<BarChartGroupData> groups = [];
-    final monthNames = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+    final monthNames = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
     // Looping berdasarkan bulan yang ada di data atau bulan saat ini
     for (int i = 0; i < monthNames.length; i++) {
-        final income = monthlyData[i]?['income'] ?? 0;
-        final expense = monthlyData[i]?['expense'] ?? 0;
-        groups.add(makeGroupData(i, income * scale, expense * scale));
+      final income = monthlyData[i]?['income'] ?? 0;
+      final expense = monthlyData[i]?['expense'] ?? 0;
+      groups.add(makeGroupData(i, income * scale, expense * scale));
     }
-    
+
     return groups;
   }
 
@@ -213,11 +230,12 @@ class _StatistikScreenState extends State<StatistikScreen> {
                           icon: const Icon(Icons.keyboard_arrow_down),
                           items: <String>['Monthly', 'Weekly', 'Yearly']
                               .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              })
+                              .toList(),
                           onChanged: (String? newValue) {
                             if (newValue != null) {
                               _updateTimeFrame(newValue);
@@ -259,7 +277,8 @@ class _StatistikScreenState extends State<StatistikScreen> {
                           sideTitles: SideTitles(
                             showTitles: true,
                             reservedSize: 35,
-                            interval: 2, // Ubah interval agar tidak terlalu padat
+                            interval:
+                                2, // Ubah interval agar tidak terlalu padat
                             getTitlesWidget: leftTitles,
                           ),
                         ),
@@ -314,7 +333,7 @@ class _StatistikScreenState extends State<StatistikScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Ganti dengan ListView.builder jika data bisa banyak
                 if (_transactions.isEmpty)
                   const Center(
@@ -328,7 +347,8 @@ class _StatistikScreenState extends State<StatistikScreen> {
                   ...List.generate(
                     _transactions.length > 5 ? 5 : _transactions.length,
                     (index) {
-                      final transaction = _transactions.reversed.toList()[index];
+                      final transaction = _transactions.reversed
+                          .toList()[index];
                       return _buildTransactionItem(
                         transaction: transaction,
                         formatter: currencyFormatter,
@@ -358,12 +378,28 @@ class _StatistikScreenState extends State<StatistikScreen> {
     return SideTitleWidget(
       axisSide: meta.axisSide,
       space: 4,
-      child: Text(text, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.grey, fontSize: 12),
+      ),
     );
   }
 
   Widget bottomTitles(double value, TitleMeta meta) {
-    final titles = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final titles = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final int index = value.toInt();
 
     if (index < 0 || index >= titles.length) {
@@ -415,7 +451,7 @@ class _StatistikScreenState extends State<StatistikScreen> {
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
-          )
+          ),
         ],
       ),
       child: Row(
@@ -434,7 +470,10 @@ class _StatistikScreenState extends State<StatistikScreen> {
             children: [
               Text(
                 formatter.format(amount),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(title, style: const TextStyle(color: Colors.grey)),
             ],
@@ -474,8 +513,8 @@ class _buildTransactionItem extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  transaction.description ?? 'Tanpa Keterangan', 
-                  style: const TextStyle(color: Colors.grey, fontSize: 12)
+                  transaction.description ?? 'Tanpa Keterangan',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ],
             ),

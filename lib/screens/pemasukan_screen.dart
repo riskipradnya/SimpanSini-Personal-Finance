@@ -28,7 +28,10 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null);
-    _dateController.text = DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDate);
+    _dateController.text = DateFormat(
+      'dd MMMM yyyy',
+      'id_ID',
+    ).format(_selectedDate);
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -41,17 +44,21 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _dateController.text = DateFormat('dd MMMM yyyy', 'id_ID').format(picked);
+        _dateController.text = DateFormat(
+          'dd MMMM yyyy',
+          'id_ID',
+        ).format(picked);
       });
     }
   }
 
   Future<void> _showConfirmationDialog() async {
     if (_amountController.text.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah tidak boleh kosong')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Jumlah tidak boleh kosong')),
+        );
+      }
       return;
     }
 
@@ -86,6 +93,8 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
   }
 
   Future<void> _executeSave(Transaction transaction) async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -95,9 +104,11 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
       final userId = prefs.getInt('user_id') ?? 0;
 
       if (userId == 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
+        }
         return;
       }
 
@@ -110,23 +121,32 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
         date: transaction.date,
       );
 
-      final result = await TransactionService().addTransaction(finalTransaction);
+      final result = await TransactionService().addTransaction(
+        finalTransaction,
+      );
 
       if (!mounted) return;
 
       if (result['status'] == 'success') {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(result['message'])));
-        if (!mounted) return;
-        Navigator.pop(context, true);
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(result['message'])));
+          Navigator.pop(context, true);
+        }
       } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${result['message']}')),
+          );
+        }
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -155,7 +175,10 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
         ),
         title: Text(
           'Tambah Pemasukan',
-          style: GoogleFonts.manrope(color: Colors.black, fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -187,8 +210,9 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: _inputDecoration(''),
-              items: <String>['Gaji', 'Bonus', 'Investasi', 'Lainnya']
-                  .map((String value) {
+              items: <String>['Gaji', 'Bonus', 'Investasi', 'Lainnya'].map((
+                String value,
+              ) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
@@ -223,7 +247,11 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.money, color: Color(0xFF2C2C54), size: 16),
+                      const Icon(
+                        Icons.money,
+                        color: Color(0xFF2C2C54),
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'IDR',
@@ -256,7 +284,9 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
                   : Text(
                       'Simpan Pemasukan',
                       style: GoogleFonts.manrope(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
             const SizedBox(height: 16),
@@ -287,8 +317,10 @@ class _PemasukanScreenState extends State<PemasukanScreen> {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.grey.shade100,
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 15.0,
+        horizontal: 10.0,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,

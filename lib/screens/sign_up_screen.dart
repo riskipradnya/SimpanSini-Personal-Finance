@@ -2,6 +2,7 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart'; // Add this import
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/auth_service.dart'; // <-- IMPORT AuthService
 
@@ -17,7 +18,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   // State untuk loading dan visibilitas password
   bool _isPasswordVisible = false;
   bool _isLoading = false;
@@ -33,48 +34,55 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // Fungsi untuk menangani proses registrasi
   Future<void> _handleSignUp() async {
-    // Validasi sederhana, pastikan tidak ada field yang kosong
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua kolom wajib diisi.')),
-      );
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Semua kolom wajib diisi.')),
+            );
+          }
+        });
+      }
       return;
     }
 
-    // Mulai proses loading
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Panggil fungsi signUp dari AuthService
       var result = await AuthService().signUp(
         _nameController.text,
         _emailController.text,
         _passwordController.text,
       );
 
-      // Cek apakah widget masih terpasang sebelum menampilkan UI
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
-        // Jika registrasi berhasil, kembali ke halaman login
-        if (result['status'] == 'success') {
-          Navigator.of(context).pop();
-        }
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(result['message'])));
+            if (result['status'] == 'success') {
+              Navigator.of(context).pop();
+            }
+          }
+        });
       }
     } catch (e) {
-      // Tangani error jika terjadi masalah koneksi atau lainnya
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
-        );
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
+            );
+          }
+        });
       }
     } finally {
-      // Hentikan proses loading, apapun hasilnya
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -137,7 +145,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
-              
+
               // Hubungkan TextField dengan Controller
               _buildTextField(
                 controller: _nameController,
@@ -152,7 +160,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
-              
+
               Text(
                 'Password',
                 style: TextStyle(
@@ -202,7 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              
+
               // Panggil fungsi _handleSignUp saat tombol ditekan
               SizedBox(
                 width: double.infinity,
@@ -237,7 +245,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              
+
               // Sisa UI tidak berubah
               Row(
                 children: [
