@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart'; // Add this import
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -28,7 +29,10 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null);
-    _dateController.text = DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDate);
+    _dateController.text = DateFormat(
+      'dd MMMM yyyy',
+      'id_ID',
+    ).format(_selectedDate);
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -41,7 +45,10 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _dateController.text = DateFormat('dd MMMM yyyy', 'id_ID').format(picked);
+        _dateController.text = DateFormat(
+          'dd MMMM yyyy',
+          'id_ID',
+        ).format(picked);
       });
     }
   }
@@ -49,9 +56,15 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
   // == FUNGSI BARU UNTUK MENAMPILKAN DIALOG KONFIRMASI ==
   Future<void> _showConfirmationDialog() async {
     if (_amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah tidak boleh kosong')),
-      );
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Jumlah tidak boleh kosong')),
+            );
+          }
+        });
+      }
       return;
     }
 
@@ -75,8 +88,8 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
       context: context,
       builder: (context) => ConfirmationScreen(
         transaction: transaction,
-        title: 'Total Pengeluaran',     // <-- Judul untuk pengeluaran
-        icon: Icons.download_rounded,  // <-- Ikon panah ke bawah
+        title: 'Total Pengeluaran', // <-- Judul untuk pengeluaran
+        icon: Icons.download_rounded, // <-- Ikon panah ke bawah
       ),
     );
 
@@ -87,6 +100,8 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
 
   // == FUNGSI BARU UNTUK EKSEKUSI PENYIMPANAN KE DATABASE ==
   Future<void> _executeSave(Transaction transaction) async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -96,10 +111,18 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
       final userId = prefs.getInt('user_id') ?? 0;
 
       if (userId == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User tidak ditemukan')),
+              );
+            }
+          });
+        }
         return;
       }
-      
+
       final finalTransaction = Transaction(
         userId: userId,
         type: transaction.type,
@@ -109,23 +132,53 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
         date: transaction.date,
       );
 
-      final result = await TransactionService().addTransaction(finalTransaction);
+      final result = await TransactionService().addTransaction(
+        finalTransaction,
+      );
+
+      if (!mounted) return;
 
       if (result['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));
-        Navigator.pop(context, true);
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(result['message'])));
+              Navigator.pop(context, true);
+            }
+          });
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${result['message']}')));
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: ${result['message']}')),
+              );
+            }
+          });
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          }
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-  
+
   @override
   void dispose() {
     _dateController.dispose();
@@ -145,7 +198,10 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
         ),
         title: Text(
           'Tambah Pengeluaran',
-          style: GoogleFonts.manrope(color: Colors.black, fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -177,18 +233,19 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: _inputDecoration(''),
-              items: <String>[
-                'Makan Siang',
-                'Transportasi',
-                'Belanja',
-                'Tagihan',
-                'Lainnya',
-              ].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+              items:
+                  <String>[
+                    'Makan Siang',
+                    'Transportasi',
+                    'Belanja',
+                    'Tagihan',
+                    'Lainnya',
+                  ].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
               onChanged: (newValue) {
                 setState(() {
                   _selectedCategory = newValue!;
@@ -218,7 +275,11 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.money, color: Color(0xFF2C2C54), size: 16),
+                      const Icon(
+                        Icons.money,
+                        color: Color(0xFF2C2C54),
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'IDR',
@@ -231,7 +292,9 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
             ),
             const Spacer(),
             ElevatedButton(
-              onPressed: _isLoading ? null : _showConfirmationDialog, // <-- Memanggil dialog
+              onPressed: _isLoading
+                  ? null
+                  : _showConfirmationDialog, // <-- Memanggil dialog
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2C2C54),
                 minimumSize: const Size(double.infinity, 50),
@@ -251,7 +314,9 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
                   : Text(
                       'Simpan Pengeluaran',
                       style: GoogleFonts.manrope(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
             const SizedBox(height: 16),
@@ -282,8 +347,10 @@ class _PengeluaranScreenState extends State<PengeluaranScreen> {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.grey.shade100,
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 15.0,
+        horizontal: 10.0,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,

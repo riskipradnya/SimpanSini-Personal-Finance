@@ -60,9 +60,12 @@ class TransactionService {
     final response = await http.post(
       Uri.parse('$_baseUrl/add_transaction.php'),
       headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8', // Penting: Menetapkan Content-Type
+        'Content-Type':
+            'application/json; charset=UTF-8', // Penting: Menetapkan Content-Type
       },
-      body: jsonEncode(transactionData), // Penting: Mengonversi Map ke string JSON
+      body: jsonEncode(
+        transactionData,
+      ), // Penting: Mengonversi Map ke string JSON
     );
 
     if (response.statusCode == 200) {
@@ -83,7 +86,11 @@ class TransactionService {
       // Lebih detail dalam error handling status code non-200
       print('Failed to add transaction. Status code: ${response.statusCode}');
       print('Response body: ${response.body}');
-      return {'status': 'error', 'message': 'Failed to connect to the server or server error: ${response.statusCode}'};
+      return {
+        'status': 'error',
+        'message':
+            'Failed to connect to the server or server error: ${response.statusCode}',
+      };
     }
   }
 

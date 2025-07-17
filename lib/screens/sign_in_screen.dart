@@ -1,6 +1,7 @@
 // lib/screens/sign_in_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart'; // Add this import
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/auth_service.dart';
 import 'sign_up_screen.dart';
@@ -33,57 +34,65 @@ class _SignInScreenState extends State<SignInScreen> {
 
   // Fungsi untuk menangani proses login
   Future<void> _handleSignIn() async {
-    // Validasi sederhana
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email dan password wajib diisi.')),
-      );
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Email dan password wajib diisi.')),
+            );
+          }
+        });
+      }
       return;
     }
 
-    // Mulai proses loading
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Panggil fungsi signIn dari AuthService
       var result = await AuthService().signIn(
         _emailController.text,
         _passwordController.text,
       );
 
-      // Cek apakah widget masih terpasang
-      if (mounted) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         if (result['status'] == 'success') {
-          // Jika login berhasil
           final userName = result['data']['nama_lengkap'];
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Login berhasil! Selamat datang, $userName'),
-            ),
-          );
-          
-          // Navigasi ke halaman MainScreen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Login berhasil! Selamat datang, $userName'),
+                ),
+              );
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              );
+            }
+          });
         } else {
-          // Jika login gagal, tampilkan pesan error dari server
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(result['message'])));
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(result['message'])));
+            }
+          });
         }
       }
     } catch (e) {
-      // Tangani error koneksi atau lainnya
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
-        );
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
+            );
+          }
+        });
       }
     } finally {
-      // Hentikan proses loading, apapun hasilnya
       if (mounted) {
         setState(() {
           _isLoading = false;
