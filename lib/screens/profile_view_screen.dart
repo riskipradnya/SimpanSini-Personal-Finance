@@ -2,12 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
+// import 'package:path_provider/path_provider.dart'; // Tidak perlu lagi jika gambar hanya dari URL server
+// import 'package:path/path.dart' as path; // Tidak perlu lagi
 
 import '../models/user_model.dart';
 import '../database/user_service.dart';
-// import 'profile_edit_screen.dart'; // Hapus import ini jika ProfileEditScreen tidak akan digunakan
 
 class ProfileViewScreen extends StatefulWidget {
   final User user;
@@ -27,6 +26,18 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   void initState() {
     super.initState();
     _currentUser = widget.user;
+    // PENTING: Refresh data user saat masuk ke halaman ini
+    // untuk memastikan profile_image yang terbaru dimuat dari SharedPreferences
+    _loadCurrentUser(); 
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final user = await UserService().getCurrentUser();
+    if (user != null) {
+      setState(() {
+        _currentUser = user;
+      });
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -38,29 +49,28 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       final XFile? image = await _picker.pickImage(source: source, imageQuality: 80);
 
       if (image != null) {
-        final directory = await getApplicationDocumentsDirectory();
-        final String fileName = path.basename(image.path);
-        final String newPath = path.join(directory.path, fileName);
-        final File newImage = await File(image.path).copy(newPath);
+        // --- PERUBAHAN: TIDAK PERLU MENYIMPAN LOKAL LAGI SECARA PERMANEN ---
+        // Karena kita akan menguploadnya ke server dan mendapatkan URLnya kembali.
+        // Cukup ambil path sementara dari XFile.
+        final String temporaryImagePath = image.path; 
 
-        final updatedUser = _currentUser.copyWith(profileImage: newImage.path);
-
-        final result = await UserService().updateUserProfileImage(updatedUser.id, newImage.path);
+        final result = await UserService().updateUserProfileImage(_currentUser.id, temporaryImagePath);
 
         if (result != null) {
           setState(() {
-            _currentUser = result;
+            _currentUser = result; // _currentUser sekarang memiliki URL gambar dari server
           });
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Profile image updated successfully!')),
             );
-            Navigator.pop(context, true);
+            // Kembali ke layar sebelumnya dan beri tahu bahwa ada perubahan
+            Navigator.pop(context, true); 
           }
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to update profile image.')),
+              const SnackBar(content: Text('Failed to update profile image on server.')),
             );
           }
         }
@@ -89,21 +99,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              // BARIS INI DIHILANGKAN UNTUK MENGHAPUS OPSI KAMERA
-              // ListTile(
-              //   leading: const Icon(Icons.camera_alt),
-              //   title: const Text('Camera'),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     _pickImage(ImageSource.camera);
-              //   },
-              // ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Gallery'),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImage(ImageSource.gallery); // Ini akan tetap ada
+                  _pickImage(ImageSource.gallery);
                 },
               ),
             ],
@@ -173,8 +174,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                               ),
                               child: ClipOval(
                                 child: _currentUser.profileImage != null && _currentUser.profileImage!.isNotEmpty
-                                    ? Image.file(
-                                        File(_currentUser.profileImage!),
+                                    ? Image.network( // --- PERUBAHAN: Gunakan Image.network ---
+                                        _currentUser.profileImage!,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
                                           return Container(

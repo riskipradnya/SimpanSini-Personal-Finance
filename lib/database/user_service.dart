@@ -2,13 +2,15 @@
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http; // Import http package
+import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
-// import 'dart:io'; // Tidak perlu jika hanya menyimpan path string
+import 'dart:io'; // Import ini untuk File
 
 class UserService {
   // Ganti dengan URL dasar API PHP Anda
-  static const String _baseUrl = 'http://localhost/api_keuangan'; // PASTIKAN SUDAH SEPERTI INI
+  static const String _baseUrl = 'http://10.0.2.2/api_keuangan'; // UNTUK EMULATOR ANDROID: Gunakan 10.0.2.2
+                                                                // UNTUK REAL DEVICE: Gunakan IP lokal komputer Anda (misal: http://192.168.1.x/api_keuangan)
+                                                                // UNTUK WEB/DESKTOP: http://localhost/api_keuangan
 
   Future<User?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
@@ -18,7 +20,6 @@ class UserService {
       final int id = prefs.getInt('user_id') ?? 0;
       final String name = prefs.getString('user_name') ?? 'Guest';
       final String email = prefs.getString('user_email') ?? 'guest@example.com';
-      // Password tidak perlu diambil dari shared_preferences jika Anda akan verifikasi di backend
       final String? profileImage = prefs.getString('user_profile_image');
 
       return User(
@@ -54,7 +55,6 @@ class UserService {
   }
 
   // Metode untuk memperbarui data pengguna (nama dan email)
-  // Ini juga harus memanggil API jika Anda ingin memperbarui di database
   Future<User?> updateUser(User updatedUser) async {
     final prefs = await SharedPreferences.getInstance();
     // TODO: Tambahkan panggilan API untuk memperbarui nama dan email di database
@@ -65,37 +65,55 @@ class UserService {
     return updatedUser;
   }
 
-  // >>> TAMBAHKAN KEMBALI FUNGSI INI UNTUK MENGUPDATE GAMBAR PROFIL <<<
+  // --- MODIFIKASI FUNGSI INI UNTUK MENGUPDATE GAMBAR PROFIL KE SERVER ---
   Future<User?> updateUserProfileImage(int userId, String imagePath) async {
     final prefs = await SharedPreferences.getInstance();
     final currentUser = await getCurrentUser();
 
     if (currentUser != null && currentUser.id == userId) {
-      // TODO: Anda juga perlu menambahkan panggilan API di sini
-      // jika Anda ingin menyimpan path gambar profil ke database melalui API PHP.
-      // Contoh:
-      // final response = await http.post(
-      //   Uri.parse('$_baseUrl/update_profile_image.php'),
-      //   headers: <String, String>{'Content-Type': 'application/json; charset=UTF-8'},
-      //   body: jsonEncode({'user_id': userId, 'profile_image_path': imagePath}),
-      // );
-      //
-      // if (response.statusCode == 200 && jsonDecode(response.body)['success']) {
-      //   await prefs.setString('user_profile_image', imagePath);
-      //   return currentUser.copyWith(profileImage: imagePath);
-      // } else {
-      //   print('Failed to update profile image on server.');
-      //   return null;
-      // }
+      try {
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('$_baseUrl/update_profile_image.php'),
+        );
+        request.fields['user_id'] = userId.toString();
+        request.files.add(await http.MultipartFile.fromPath(
+          'profile_image', // Nama field di PHP untuk file
+          imagePath,
+        ));
 
-      // Untuk saat ini, jika Anda hanya menyimpan di shared_preferences:
-      await prefs.setString('user_profile_image', imagePath);
-      // Mengembalikan User dengan gambar profil yang diperbarui
-      return currentUser.copyWith(profileImage: imagePath);
+        var response = await request.send();
+        final respStr = await response.stream.bytesToString();
+        final Map<String, dynamic> responseData = jsonDecode(respStr);
+
+        if (response.statusCode == 200 && responseData['status'] == 'success') {
+          final String imageUrl = responseData['profile_image_url'];
+
+          // Simpan URL gambar yang baru ke SharedPreferences
+          await prefs.setString('user_profile_image', imageUrl);
+          
+          // Hapus gambar lama dari penyimpanan lokal jika ada dan itu bukan URL
+          // Ini adalah langkah opsional, tergantung apakah Anda ingin menghapus cache lokal
+          // agar selalu fetch dari URL, atau tetap simpan cache lokal.
+          // Untuk kasus ini, karena kita menyimpan URL dari server, kita tidak perlu
+          // lagi menyimpan file di path_provider secara persisten,
+          // cukup URLnya saja untuk ditampilkan menggunakan NetworkImage.
+          // Jadi, kita bisa hapus logika path_provider sebelumnya di ProfileViewScreen
+          // dan langsung gunakan URL dari server.
+
+          return currentUser.copyWith(profileImage: imageUrl);
+        } else {
+          print('Failed to update profile image on server: ${responseData['message']}');
+          return null;
+        }
+      } catch (e) {
+        print('Exception during profile image update: $e');
+        return null;
+      }
     }
     return null; // Gagal mengupdate jika user tidak ditemukan atau tidak login
   }
-  // <<< AKHIR FUNGSI BARU TAMBAHAN >>>
+  // --- AKHIR MODIFIKASI FUNGSI INI ---
 
   // Metode untuk mengubah password
   Future<bool> changePassword(String currentPassword, String newPassword) async {
@@ -123,12 +141,6 @@ class UserService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         if (responseData['success']) {
-          // Jika perubahan password berhasil di backend,
-          // Anda bisa memilih untuk mengupdate shared_preferences juga,
-          // atau mengabaikannya jika password tidak disimpan di lokal.
-          // Saat ini, saya merekomendasikan untuk TIDAK menyimpan password di shared_preferences
-          // setelah password di-hash di database.
-          
           return true;
         } else {
           print('Failed to change password: ${responseData['message']}');
