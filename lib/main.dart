@@ -1,10 +1,10 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-// Diperlukan untuk delegates di bawah
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'screens/sign_in_screen.dart';
+import 'screens/sign_in_screen.dart'; // Tetap impor SignInScreen sebagai halaman awal
+import 'screens/main_screen.dart'; // Import MainScreen
 
 // Kode ini sudah benar
 void main() async {
@@ -25,15 +25,21 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
         fontFamily: 'Poppins',
       ),
-      // Pengaturan lokalisasi ini juga sudah benar
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('id', 'ID')],
-      home: const SignInScreen(),
+      home: const SignInScreen(), // Tetap mulai dari SignInScreen
       debugShowCheckedModeBanner: false,
+      // Tambahkan route jika Anda menggunakan named routes
+      routes: {
+        '/main': (context) => const MainScreen(),
+        // Anda juga bisa menambahkan route untuk ProfileEditScreen dan ChangePasswordScreen
+        // jika Anda ingin menavigasi ke sana dari luar ProfileScreen,
+        // tetapi untuk kasus ini, navigasi langsung dari ProfileScreen sudah cukup.
+      },
     );
   }
 }

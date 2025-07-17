@@ -1,4 +1,4 @@
-// main_screen.dart
+// lib/screens/main_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +7,7 @@ import 'pemasukan_screen.dart';
 import 'pengeluaran_screen.dart';
 import 'statistik_screen.dart';
 import 'wishlist_screen.dart';
+import 'profil_screen.dart'; // Import ProfileScreen
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -35,8 +36,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    // Skip the middle item (index 2) as it's the FAB placeholder
-    if (index == 2) return;
+    if (index == 2) {
+      _showAddTransactionDialog();
+      return;
+    }
 
     int actualIndex = index > 2 ? index - 1 : index;
     setState(() {
@@ -153,8 +156,9 @@ class _MainScreenState extends State<MainScreen> {
         children: <Widget>[
           HomeScreen(refreshNotifier: _refreshNotifier),
           StatistikScreen(refreshNotifier: _refreshNotifier),
+          const Center(child: Text('Add Transaction Placeholder')), // Placeholder untuk FAB
           WishlistScreen(refreshNotifier: _refreshNotifier),
-          const Center(child: Text('Profile')),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -174,19 +178,10 @@ class _MainScreenState extends State<MainScreen> {
         ),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: 'Statistic',
-          ),
-          BottomNavigationBarItem(icon: SizedBox.shrink(), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star_border_rounded),
-            label: 'Wishlist',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Statistic'),
+          BottomNavigationBarItem(icon: SizedBox.shrink(), label: ''), // dummy untuk FAB
+          BottomNavigationBarItem(icon: Icon(Icons.star_border_rounded), label: 'Wishlist'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
