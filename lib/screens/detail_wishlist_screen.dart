@@ -184,6 +184,62 @@ class _DetailWishlistScreenState extends State<DetailWishlistScreen> {
     }
   }
 
+  Future<void> _deleteWishlistItem() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Hapus Item',
+            style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus "${_currentItem.title}"?',
+            style: GoogleFonts.manrope(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && _currentItem.id != null) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final result = await WishlistService().deleteWishlistItem(
+        _currentItem.id!,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (result['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Item berhasil dihapus')),
+          );
+          Navigator.pop(context, true); // Return true to indicate changes
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(result['message'])));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat.currency(
@@ -288,9 +344,30 @@ class _DetailWishlistScreenState extends State<DetailWishlistScreen> {
 
                     const SizedBox(height: 80),
 
-                    // Action buttons
+                    // Action buttons - positions swapped
                     Row(
                       children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _deleteWishlistItem,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'Hapus Wishlist',
+                              style: GoogleFonts.manrope(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: OutlinedButton(
                             onPressed: _navigateToEdit,
@@ -307,36 +384,6 @@ class _DetailWishlistScreenState extends State<DetailWishlistScreen> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFF2C2C54),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Add functionality to save/add to savings
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Fitur simpan wishlist akan segera tersedia',
-                                  ),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2C2C54),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Simpan Wishlist',
-                              style: GoogleFonts.manrope(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
                               ),
                             ),
                           ),
