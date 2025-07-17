@@ -169,17 +169,18 @@ class _DetailWishlistScreenState extends State<DetailWishlistScreen> {
           _currentItem = updatedItem;
           _isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Item berhasil diupdate')));
-        Navigator.pop(context, true); // Return true to indicate changes
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Item berhasil diupdate')),
+        );
+        // Return with timestamp for precise refresh triggering
+        Navigator.pop(context, DateTime.now().millisecondsSinceEpoch);
       } else {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result['message'])));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
       }
     }
   }
@@ -217,24 +218,23 @@ class _DetailWishlistScreenState extends State<DetailWishlistScreen> {
         _isLoading = true;
       });
 
-      final result = await WishlistService().deleteWishlistItem(
-        _currentItem.id!,
-      );
+      final result = await WishlistService().deleteWishlistItem(_currentItem.id!);
 
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-
+        
         if (result['status'] == 'success') {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Item berhasil dihapus')),
           );
-          Navigator.pop(context, true); // Return true to indicate changes
+          // Return with timestamp for precise refresh triggering
+          Navigator.pop(context, DateTime.now().millisecondsSinceEpoch);
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(result['message'])));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'])),
+          );
         }
       }
     }

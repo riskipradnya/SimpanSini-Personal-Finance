@@ -45,6 +45,14 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  // Add method to navigate to specific screen
+  void navigateToScreen(int index) {
+    setState(() {
+      _selectedIndex = index;
+      _pageController.jumpToPage(index);
+    });
+  }
+
   void _showAddTransactionDialog() {
     showDialog(
       context: context,
@@ -90,7 +98,9 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     );
                     if (result == true) {
-                      _refreshNotifier.value++;
+                      // Trigger refresh for all screens
+                      _refreshNotifier.value =
+                          DateTime.now().millisecondsSinceEpoch;
                     }
                   },
                   child: Text(
@@ -120,7 +130,9 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     );
                     if (result == true) {
-                      _refreshNotifier.value++;
+                      // Trigger refresh for all screens
+                      _refreshNotifier.value =
+                          DateTime.now().millisecondsSinceEpoch;
                     }
                   },
                   child: Text(

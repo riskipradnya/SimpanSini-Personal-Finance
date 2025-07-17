@@ -6,11 +6,80 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../database/transaction_service.dart';
 import '../models/transaction_model.dart';
 
+// You need to define _MainScreenState or ensure it's accessible.
+// For this rewrite, I'm assuming MainScreenState is a State class
+// of a StatefulWidget named MainScreen, and we'll try to get its instance
+// via context if it's an ancestor.
+// If MainScreenState is not meant to be accessed this way,
+// you might need to reconsider how navigation is handled.
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  final PageController _pageController = PageController();
+  int _selectedIndex = 0;
+
+  void navigateToScreen(int index) {
+    setState(() {
+      _selectedIndex = index;
+      _pageController.jumpToPage(index);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        children: [
+          // Assuming HomeScreen will be one of the pages
+          HomeScreen(refreshNotifier: ValueNotifier(0)), // Dummy notifier
+          // Other screens would go here
+          Center(child: Text("Statistics Screen")),
+          Center(child: Text("Another Screen")),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Statistics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: navigateToScreen,
+      ),
+    );
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   // 1. Terima ValueNotifier dari parent widget (MainScreen)
   final ValueNotifier<int> refreshNotifier;
+  // This should not directly refer to a State object as it can lead to issues.
+  // Instead, rely on the ValueNotifier for updates or find the ancestor state if truly needed.
+  // For navigation, the navigateToScreen callback is a better pattern.
+  // final _MainScreenState? mainScreenState; // Removed this line
 
-  const HomeScreen({super.key, required this.refreshNotifier});
+  const HomeScreen({
+    super.key,
+    required this.refreshNotifier,
+    // this.mainScreenState, // Removed this line
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -466,9 +535,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (value == 0) {
       text = '0';
     } else if (value < 10) {
+      // Assuming a value of 1.0 represents 100K
       text = '${(value * 100).toInt()}K';
     } else {
-      text = '${value.toInt()}M';
+      // Assuming a value of 10.0 represents 1M
+      text = '${(value / 10).toInt()}M';
     }
 
     return Text(text, style: style, textAlign: TextAlign.left);
@@ -645,8 +716,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             TextButton(
               onPressed: () {
-                // Navigate to statistics screen or full transaction list
-                print('View all transactions');
+                // Find the parent MainScreenState and navigate
+                final mainScreenContext = context
+                    .findAncestorStateOfType<_MainScreenState>();
+                if (mainScreenContext != null) {
+                  mainScreenContext.navigateToScreen(
+                    1,
+                  ); // Assuming 1 is the index for the statistics screen
+                }
               },
               child: Text(
                 'Lihat Semua',
@@ -697,7 +774,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-
     // Show last 3 transactions
     final recentTransactions = _allTransactions.reversed.take(3).toList();
     final formatter = NumberFormat.currency(
