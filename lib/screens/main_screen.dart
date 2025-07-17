@@ -6,6 +6,7 @@ import 'home_screen.dart';
 import 'pemasukan_screen.dart';
 import 'pengeluaran_screen.dart';
 import 'statistik_screen.dart';
+import 'wishlist_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -34,12 +35,16 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
+    // Skip the middle item (index 2) as it's the FAB placeholder
+    if (index == 2) return;
+
+    int actualIndex = index > 2 ? index - 1 : index;
     setState(() {
-      _selectedIndex = index;
-      _pageController.jumpToPage(index);
+      _selectedIndex = actualIndex;
+      _pageController.jumpToPage(actualIndex);
     });
   }
-  
+
   void _showAddTransactionDialog() {
     showDialog(
       context: context,
@@ -54,8 +59,17 @@ class _MainScreenState extends State<MainScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Pilih Jenis Transaksi', style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold,),),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop(),),
+                    Text(
+                      'Pilih Jenis Transaksi',
+                      style: GoogleFonts.manrope(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -63,32 +77,60 @@ class _MainScreenState extends State<MainScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3A4276),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () async {
                     Navigator.of(context).pop();
-                    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const PemasukanScreen()),);
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PemasukanScreen(),
+                      ),
+                    );
                     if (result == true) {
                       _refreshNotifier.value++;
                     }
                   },
-                  child: Text('Pemasukan', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white,),),
+                  child: Text(
+                    'Pemasukan',
+                    style: GoogleFonts.manrope(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: BorderSide(color: Colors.grey[400]!),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () async {
                     Navigator.of(context).pop();
-                    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const PengeluaranScreen()),);
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PengeluaranScreen(),
+                      ),
+                    );
                     if (result == true) {
                       _refreshNotifier.value++;
                     }
                   },
-                  child: Text('Pengeluaran', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87,),),
+                  child: Text(
+                    'Pengeluaran',
+                    style: GoogleFonts.manrope(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -111,15 +153,14 @@ class _MainScreenState extends State<MainScreen> {
         children: <Widget>[
           HomeScreen(refreshNotifier: _refreshNotifier),
           StatistikScreen(refreshNotifier: _refreshNotifier),
-          const Center(child: Text('Wishlist')),
+          WishlistScreen(refreshNotifier: _refreshNotifier),
           const Center(child: Text('Profile')),
         ],
       ),
-      // --- GANTI BOTTOMAPPBAR MENJADI BOTTOMNAVIGATIONBAR ---
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: _selectedIndex > 1 ? _selectedIndex + 1 : _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // Penting jika item lebih dari 3
+        type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFF3A4276),
         unselectedItemColor: Colors.grey[400],
@@ -132,19 +173,12 @@ class _MainScreenState extends State<MainScreen> {
           fontWeight: FontWeight.w600,
         ),
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart_rounded),
             label: 'Statistic',
           ),
-          // Tambahkan item dummy untuk FAB jika Anda ingin tetap memiliki ruang di tengah
-          BottomNavigationBarItem(
-            icon: SizedBox.shrink(), // Widget kosong
-            label: '',
-          ),
+          BottomNavigationBarItem(icon: SizedBox.shrink(), label: ''),
           BottomNavigationBarItem(
             icon: Icon(Icons.star_border_rounded),
             label: 'Wishlist',
@@ -155,16 +189,13 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked, // TETAPKAN INI UNTUK MENEMPATKAN FAB DI TENGAH BOTTOMNAVBAR
-      floatingActionButton: Builder(
-        builder: (BuildContext context) {
-          return FloatingActionButton(
-            onPressed: _showAddTransactionDialog,
-            backgroundColor: const Color(0xFF3A4276),
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add, color: Colors.white),
-          );
-        },
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        heroTag: "main_add_btn",
+        onPressed: _showAddTransactionDialog,
+        backgroundColor: const Color(0xFF3A4276),
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
