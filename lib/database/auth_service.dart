@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user_model.dart';
 
 class AuthService {
   // Ganti URL ini saat Anda sudah hosting
@@ -66,5 +67,102 @@ class AuthService {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+}
+
+class UserService {
+  final String _baseUrl = "http://localhost/api_keuangan";
+
+  // Get current user from SharedPreferences
+  Future<User?> getCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('user_id');
+    final userName = prefs.getString('user_name');
+    final userEmail = prefs.getString('user_email');
+    final profileImage = prefs.getString('profile_image');
+
+    if (userId != null && userName != null && userEmail != null) {
+      return User(
+        id: userId,
+        namaLengkap: userName,
+        email: userEmail,
+        profileImage: profileImage,
+      );
+    }
+    return null;
+  }
+
+  // Create default user if none exists
+  Future<User> createDefaultUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = User(
+      id: prefs.getInt('user_id') ?? 1,
+      namaLengkap: prefs.getString('user_name') ?? 'User',
+      email: prefs.getString('user_email') ?? 'user@example.com',
+      profileImage: null,
+    );
+    return user;
+  }
+
+  // Update user profile
+  Future<User?> updateUser(User user) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/update_profile.php'),
+        body: {
+          'id': user.id.toString(),
+          'nama_lengkap': user.name,
+          'email': user.email,
+          'profile_image': user.profileImage ?? '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          // Update SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_name', user.name);
+          await prefs.setString('user_email', user.email);
+          if (user.profileImage != null) {
+            await prefs.setString('profile_image', user.profileImage!);
+          }
+          return user;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error updating user: $e');
+      return null;
+    }
+  }
+
+  // Change password
+  Future<bool> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/change_password.php'),
+        body: {
+          'user_id': userId.toString(),
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      print('Error changing password: $e');
+      return false;
+    }
   }
 }

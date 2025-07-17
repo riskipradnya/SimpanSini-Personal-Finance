@@ -2,11 +2,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/user_model.dart';
 import 'home_screen.dart';
 import 'pemasukan_screen.dart';
 import 'pengeluaran_screen.dart';
 import 'statistik_screen.dart';
 import 'wishlist_screen.dart';
+import 'profile_screen.dart';
+import 'profile_edit_screen.dart';
+import 'change_password_screen.dart';
+
+// Add wrapper classes for proper navigation
+class ProfileEditScreenWrapper extends StatelessWidget {
+  final User user;
+
+  const ProfileEditScreenWrapper({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: ProfileEditScreen(user: user));
+  }
+}
+
+class ChangePasswordScreenWrapper extends StatelessWidget {
+  const ChangePasswordScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: const ChangePasswordScreen());
+  }
+}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -166,7 +191,7 @@ class _MainScreenState extends State<MainScreen> {
           HomeScreen(refreshNotifier: _refreshNotifier),
           StatistikScreen(refreshNotifier: _refreshNotifier),
           WishlistScreen(refreshNotifier: _refreshNotifier),
-          const Center(child: Text('Profile')),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
