@@ -1,10 +1,11 @@
 // lib/screens/profil_screen.dart
 import 'package:flutter/material.dart';
-import '../models/user_model.dart'; // Perbaiki path import
-import '../database/user_service.dart'; // Import UserService
-import 'profile_edit_screen.dart'; // Tambahkan import ini
-import 'change_password_screen.dart'; // Tambahkan import ini
-import 'sign_in_screen.dart'; // Tambahkan import ini
+// import 'dart:io'; // Hapus import ini karena sudah Image.network
+import '../models/user_model.dart';
+import '../database/user_service.dart';
+import 'change_password_screen.dart';
+import 'sign_in_screen.dart';
+import 'profile_view_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,7 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       User? user = await UserService().getCurrentUser();
-      // Pastikan ada user, jika tidak, bisa buat default atau arahkan ke login
       user ??= await UserService().createDefaultUser();
 
       setState(() {
@@ -53,23 +53,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _navigateToEditProfile() async {
+  Future<void> _navigateToProfileView() async {
     if (_currentUser == null) {
       _showSnackBar('User data not loaded yet.');
       return;
     }
 
-    final result = await Navigator.push(
+    final bool? profileUpdated = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProfileEditScreen(user: _currentUser!),
+        builder: (context) => ProfileViewScreen(user: _currentUser!),
       ),
     );
 
-    if (result is User) {
-      setState(() {
-        _currentUser = result;
-      });
+    if (profileUpdated == true) {
+      _loadUserData();
     }
   }
 
@@ -84,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _handleLogout() async {
     try {
-      await UserService().logout(); // Memanggil logout dari UserService
+      await UserService().logout();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Logged out successfully')),
@@ -110,6 +108,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Fungsi _showForgotPasswordDialog ini tidak akan pernah terpanggil jika menu dihilangkan,
+  // tapi tidak ada salahnya membiarkannya atau bisa dihapus juga jika mau.
   void _showForgotPasswordDialog() {
     showDialog(
       context: context,
@@ -210,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: ClipOval(
                                   child: _currentUser?.profileImage != null && _currentUser!.profileImage!.isNotEmpty
-                                      ? Image.asset(
+                                      ? Image.network( // Sudah Image.network
                                           _currentUser!.profileImage!,
                                           fit: BoxFit.cover,
                                           errorBuilder: (context, error, stackTrace) {
@@ -252,9 +252,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _buildMenuItem(
                             icon: Icons.person_outline,
                             title: 'Your Profile',
-                            onTap: _navigateToEditProfile,
+                            onTap: _navigateToProfileView,
                           ),
                           const SizedBox(height: 8),
+                          // Hapus atau komentari blok di bawah ini untuk menghilangkan "History Transaction"
+                          /*
                           _buildMenuItem(
                             icon: Icons.history,
                             title: 'History Transaction',
@@ -262,7 +264,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               _showSnackBar('History Transaction clicked');
                             },
                           ),
-                          const SizedBox(height: 32),
+                          */
+                          // Sesuaikan SizedBox jika diperlukan setelah penghapusan
+                          // const SizedBox(height: 32), // Jika Anda hanya menghapus satu, ini mungkin tidak perlu diubah
 
                           _buildSectionHeader('Security'),
                           const SizedBox(height: 16),
@@ -272,12 +276,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onTap: _navigateToChangePassword,
                           ),
                           const SizedBox(height: 8),
+                          // Hapus atau komentari blok di bawah ini untuk menghilangkan "Forgot Password"
+                          /*
                           _buildMenuItem(
                             icon: Icons.lock_outline,
                             title: 'Forgot Password',
                             onTap: _showForgotPasswordDialog,
                           ),
-                          const SizedBox(height: 60),
+                          */
+                          // Sesuaikan SizedBox jika diperlukan setelah penghapusan
+                          // const SizedBox(height: 60), // Jika Anda hanya menghapus satu, ini mungkin tidak perlu diubah
 
                           GestureDetector(
                             onTap: _showLogoutDialog,

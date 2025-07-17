@@ -1,11 +1,10 @@
 // lib/models/user_model.dart
-// Hapus UserService dummy dari sini, karena sudah ada di lib/database/user_service.dart
 
 class User {
   final int id;
   final String name;
   final String email;
-  final String? profileImage;
+  final String? profileImage; // Ini akan menyimpan path gambar
   final String password; // Ini untuk simulasi local, TIDAK AMAN untuk produksi
 
   User({
