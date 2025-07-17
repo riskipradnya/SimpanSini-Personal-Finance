@@ -1,6 +1,7 @@
 // lib/screens/change_password_screen.dart
 import 'package:flutter/material.dart';
 import '../database/user_service.dart'; // Import UserService
+import '../models/user_model.dart'; // Import UserModel jika belum
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -35,6 +36,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
+      // Pastikan UserService().changePassword sekarang berinteraksi dengan API PHP Anda
       final success = await UserService().changePassword(
         _currentPasswordController.text,
         _newPasswordController.text,
@@ -50,9 +52,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           );
           Navigator.pop(context);
         } else {
+          // Pesan ini sekarang akan berasal dari respons API jika password salah
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Current password is incorrect'),
+              content: Text('Failed to change password. Please check your current password or contact support.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -78,7 +81,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( // Tambahkan Scaffold di sini
+    return Scaffold(
       body: Column(
         children: [
           // Custom App Bar
@@ -231,7 +234,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _changePassword,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6C63FF),
+                              backgroundColor: const Color(0xFF3A4276),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
