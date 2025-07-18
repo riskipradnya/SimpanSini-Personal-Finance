@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class TransactionService {
   // Base URL untuk API
   final String _baseUrl =
-      "http://localhost/api_keuangan"; // Ganti dengan URL API Anda
+      "http://192.168.117.42/api_keuangan"; // Ganti dengan URL API Anda
 
   // Mendapatkan user ID dari shared preferences
   Future<int> _getUserId() async {

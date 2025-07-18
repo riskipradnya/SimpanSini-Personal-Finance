@@ -6,7 +6,7 @@ import '../models/wishlist_model.dart';
 class WishlistService {
   // Change localhost to your actual IP address
   final String _baseUrl =
-      "http://localhost/api_keuangan"; // Replace with your IP
+      "http://192.168.117.42/api_keuangan"; // Replace with your IP
 
   Future<List<WishlistItem>> getAllWishlistItems() async {
     try {

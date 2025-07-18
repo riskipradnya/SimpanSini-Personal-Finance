@@ -27,6 +27,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.user.name);
     _emailController = TextEditingController(text: widget.user.email);
+    // Jika ada gambar profil yang sudah ada, inisialisasi _imageFile dengan path tersebut
+    if (widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty) {
+      _imageFile = File(widget.user.profileImage!);
+    }
   }
 
   @override
@@ -49,6 +53,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         setState(() {
           _imageFile = File(pickedFile.path);
         });
+        // LANGSUNG SIMPAN FOTO SETELAH DIPILIH
+        await _saveProfile(isImageOnly: true); // Panggil _saveProfile
       }
     } catch (e) {
       if (mounted) {
@@ -59,9 +65,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
+  // Tambahkan parameter opsional untuk menandakan jika hanya gambar yang disimpan
+  Future<void> _saveProfile({bool isImageOnly = false}) async {
     setState(() {
       _isLoading = true;
     });
@@ -74,22 +79,21 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
 
       final updatedUser = widget.user.copyWith(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
+        // Nama dan email tetap dari data user lama karena readOnly
         profileImage: profileImagePath,
         updatedAt: DateTime.now(),
       );
 
       print('Updating user: ${updatedUser.toJson()}'); // Debug log
 
-      final result = await UserService().updateUser(updatedUser);
+      final result = await UserService().updateUser(updatedUser); // Panggil fungsi update
 
       if (!mounted) return;
 
       if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profil berhasil diperbarui'),
+            content: Text('Foto profil berhasil diperbarui'), // Pesan lebih spesifik
             backgroundColor: Colors.green,
           ),
         );
@@ -97,11 +101,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         // Force refresh of SharedPreferences
         await _saveToSharedPreferences(result);
         
-        Navigator.pop(context, result);
+        // Jika hanya mengubah gambar, tetap di halaman ini.
+        // Jika ada perubahan lain dan Anda ingin kembali, baru panggil pop.
+        // Dalam kasus ini, karena hanya gambar yang bisa diubah dan langsung disimpan,
+        // kita tidak perlu pop otomatis. Biarkan user kembali secara manual.
+        // Navigator.pop(context, result); // DIHAPUS agar tidak langsung keluar halaman
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Gagal memperbarui profil'),
+            content: Text('Gagal memperbarui foto profil'), // Pesan lebih spesifik
             backgroundColor: Colors.red,
           ),
         );
@@ -111,7 +119,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error memperbarui profil: $e'),
+            content: Text('Error memperbarui foto profil: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -140,7 +148,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Widget _buildProfileImage() {
-    // Jika ada file gambar baru yang dipilih
+    // Jika ada file gambar baru yang dipilih dari galeri
     if (_imageFile != null) {
       return Image.file(
         _imageFile!,
@@ -149,24 +157,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         height: 100,
       );
     }
-    // Jika ada gambar profil dari data user sebelumnya
+    // Jika ada gambar profil dari data user (dari SharedPrefs)
     if (widget.user.profileImage != null &&
         widget.user.profileImage!.isNotEmpty) {
       // PENTING: Jika profileImage adalah URL dari internet, gunakan Image.network.
       // Jika ini adalah path file lokal, gunakan Image.file.
       // Asumsi saat ini adalah path lokal.
-      return Image.file(
-        File(widget.user.profileImage!),
-        fit: BoxFit.cover,
-        width: 100,
-        height: 100,
-        errorBuilder: (context, error, stackTrace) {
-          // Fallback jika file tidak ditemukan
-          return _buildDefaultAvatar();
-        },
-      );
+      // Cek apakah file benar-benar ada sebelum mencoba memuatnya
+      if (File(widget.user.profileImage!).existsSync()) {
+        return Image.file(
+          File(widget.user.profileImage!),
+          fit: BoxFit.cover,
+          width: 100,
+          height: 100,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback jika ada error saat memuat file
+            return _buildDefaultAvatar();
+          },
+        );
+      }
     }
-    // Jika tidak ada gambar sama sekali
+    // Jika tidak ada gambar sama sekali atau file tidak ditemukan
     return _buildDefaultAvatar();
   }
 
@@ -184,8 +195,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Anda harus mengembalikan Scaffold, bukan Column langsung
-    // agar bisa menggunakan ScaffoldMessenger
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -205,85 +214,75 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: ClipOval(child: _buildProfileImage()),
-                ),
-                TextButton(
-                  onPressed: _pickImage,
-                  child: const Text('Ganti Foto'),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Lengkap',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Masukkan nama Anda';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Masukkan email Anda';
-                    }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Masukkan email yang valid';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C63FF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+      body: _isLoading // Tampilkan loading indicator di tengah halaman jika sedang memuat
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: _pickImage, // Ini tetap bisa diklik untuk ganti foto
+                        child: ClipOval(child: _buildProfileImage()),
                       ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Simpan Perubahan',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+                      TextButton(
+                        onPressed: _pickImage, // Tombol "Ganti Foto"
+                        child: const Text('Ganti Foto'),
+                      ),
+                      const SizedBox(height: 32),
+                      TextFormField(
+                        controller: _nameController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Lengkap',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      // const SizedBox(height: 32), // DIHAPUS
+                      // SizedBox( // DIHAPUS
+                      //   width: double.infinity, // DIHAPUS
+                      //   height: 50, // DIHAPUS
+                      //   child: ElevatedButton( // DIHAPUS
+                      //     onPressed: _isLoading ? null : _saveProfile, // DIHAPUS
+                      //     style: ElevatedButton.styleFrom( // DIHAPUS
+                      //       backgroundColor: const Color(0xFF6C63FF), // DIHAPUS
+                      //       shape: RoundedRectangleBorder( // DIHAPUS
+                      //         borderRadius: BorderRadius.circular(8), // DIHAPUS
+                      //       ), // DIHAPUS
+                      //     ), // DIHAPUS
+                      //     child: _isLoading // DIHAPUS
+                      //         ? const CircularProgressIndicator(color: Colors.white) // DIHAPUS
+                      //         : const Text( // DIHAPUS
+                      //             'Simpan Perubahan', // DIHAPUS
+                      //             style: TextStyle( // DIHAPUS
+                      //               fontSize: 16, // DIHAPUS
+                      //               fontWeight: FontWeight.w600, // DIHAPUS
+                      //               color: Colors.white, // DIHAPUS
+                      //             ), // DIHAPUS
+                      //           ), // DIHAPUS
+                      //   ), // DIHAPUS
+                      // ), // DIHAPUS
+                      const SizedBox(height: 60), // Beri sedikit padding bawah
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

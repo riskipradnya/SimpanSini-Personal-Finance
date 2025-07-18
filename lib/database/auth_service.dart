@@ -6,15 +6,17 @@ import '../models/user_model.dart';
 class AuthService {
   // Ganti URL ini saat Anda sudah hosting
   // Untuk tes lokal, ganti dengan IP Address komputer Anda
-  final String _baseUrl =
-      "http://localhost/api_keuangan"; // <-- GANTI DENGAN IP ANDA
+  // PASTIKAN INI ADALAH IP LOKAL KOMPUTER ANDA, BUKAN 'localhost'
+  // Jika Anda menjalankan di emulator Android, '10.0.2.2' adalah IP untuk localhost.
+  // Jika Anda menjalankan di iOS simulator atau perangkat fisik, gunakan IP LAN komputer Anda (contoh: '192.168.1.XX')
+  final String _baseUrl = "http://192.168.117.42/api_keuangan"; // <-- GANTI DENGAN IP ANDA YANG TEPAT!
 
   // Fungsi untuk Registrasi (CREATE)
   Future<Map<String, dynamic>> signUp(
-    String name,
-    String email,
-    String password,
-  ) async {
+      String name,
+      String email,
+      String password,
+      ) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/register.php'),
       body: {'nama_lengkap': name, 'email': email, 'password': password},
@@ -71,7 +73,8 @@ class AuthService {
 }
 
 class UserService {
-  final String _baseUrl = "http://localhost/api_keuangan";
+  // Pastikan _baseUrl ini sama dengan di AuthService
+  final String _baseUrl = "http://192.168.117.42/api_keuangan"; // <-- GANTI DENGAN IP ANDA YANG TEPAT!
 
   // Get current user from SharedPreferences
   Future<User?> getCurrentUser() async {
@@ -145,19 +148,22 @@ class UserService {
     }
   }
 
-  // Change password
+  // Change password - PERBAIKAN DI SINI
   Future<bool> changePassword(
-    String currentPassword,
-    String newPassword,
-  ) async {
+      String currentPassword,
+      String newPassword,
+      ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
 
-      // Simulate server call (uncomment when you have the server endpoint)
-      /*
+      if (userId == null) {
+        print('User ID not found in SharedPreferences.');
+        return false;
+      }
+
       final response = await http.post(
-        Uri.parse('$_baseUrl/change_password.php'),
+        Uri.parse('$_baseUrl/change_password.php'), // <-- Ini endpoint PHP yang akan kita buat
         body: {
           'user_id': userId.toString(),
           'current_password': currentPassword,
@@ -168,11 +174,11 @@ class UserService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['status'] == 'success';
+      } else {
+        print('Server responded with status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return false;
       }
-      */
-
-      // For now, return true (simulate success)
-      return true;
     } catch (e) {
       print('Error changing password: $e');
       return false;

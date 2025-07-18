@@ -132,7 +132,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Create Account',
+                'Buat Account',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -149,14 +149,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               // Hubungkan TextField dengan Controller
               _buildTextField(
                 controller: _nameController,
-                label: 'Full Name',
-                hint: 'Enter your name',
+                label: 'Nama Lengkap',
+                hint: 'Masukkan nama lengkap Anda',
               ),
               const SizedBox(height: 20),
               _buildTextField(
                 controller: _emailController,
-                label: 'Email Address',
-                hint: 'Enter your email address',
+                label: 'Alamamt Email',
+                hint: 'Masukkan alamat email Anda',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
@@ -174,7 +174,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _passwordController,
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
-                  hintText: 'Enter your password',
+                  hintText: 'Masukan password Anda',
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -235,7 +235,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         )
                       : const Text(
-                          'Create An Account',
+                          'Buat Akun',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

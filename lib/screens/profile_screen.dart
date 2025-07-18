@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'dart:io'; // Perlu import ini jika menggunakan Image.file
 import '../models/user_model.dart';
 import '../database/auth_service.dart';
-import 'main_screen.dart';
+import 'main_screen.dart'; // Pastikan ini diimpor jika diperlukan untuk navigasi
 import 'sign_in_screen.dart';
+import 'profile_edit_screen.dart'; // Import ProfileEditScreenWrapper
+import 'change_password_screen.dart'; // Import ChangePasswordScreenWrapper
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -177,41 +179,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 40),
 
                           // Personal Info Section
-                          _buildSectionHeader('Personal Info'),
+                          _buildSectionHeader('Info Pribadi'),
                           const SizedBox(height: 16),
                           _buildMenuItem(
                             icon: Icons.person_outline,
                             title: 'Your Profile',
                             onTap: _navigateToEditProfile,
                           ),
-                          const SizedBox(height: 8),
-                          _buildMenuItem(
-                            icon: Icons.history,
-                            title: 'History Transaction',
-                            onTap: () {
-                              // Navigate to transaction history
-                              _showSnackBar('History Transaction clicked');
-                            },
-                          ),
+                          // const SizedBox(height: 8), // DIHAPUS
+                          // _buildMenuItem( // DIHAPUS
+                          //   icon: Icons.history, // DIHAPUS
+                          //   title: 'History Transaction', // DIHAPUS
+                          //   onTap: () { // DIHAPUS
+                          //     // Navigate to transaction history // DIHAPUS
+                          //     _showSnackBar('History Transaction clicked'); // DIHAPUS
+                          //   }, // DIHAPUS
+                          // ), // DIHAPUS
                           const SizedBox(height: 32),
 
                           // Security Section
-                          _buildSectionHeader('Security'),
+                          _buildSectionHeader('Keamanan'),
                           const SizedBox(height: 16),
                           _buildMenuItem(
                             icon: Icons.lock_outline,
-                            title: 'Change Password',
+                            title: 'Ubah Password',
                             onTap: _navigateToChangePassword,
                           ),
-                          const SizedBox(height: 8),
-                          _buildMenuItem(
-                            icon: Icons.lock_outline,
-                            title: 'Forgot Password',
-                            onTap: () {
-                              // Navigate to forgot password
-                              _showForgotPasswordDialog();
-                            },
-                          ),
+                          // const SizedBox(height: 8), // DIHAPUS
+                          // _buildMenuItem( // DIHAPUS
+                          //   icon: Icons.lock_outline, // DIHAPUS
+                          //   title: 'Forgot Password', // DIHAPUS
+                          //   onTap: () { // DIHAPUS
+                          //     // Navigate to forgot password // DIHAPUS
+                          //     _showForgotPasswordDialog(); // DIHAPUS
+                          //   }, // DIHAPUS
+                          // ), // DIHAPUS
                           const SizedBox(height: 60),
 
                           // Logout Button
@@ -286,6 +288,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Fungsi _showForgotPasswordDialog dan _showLogoutDialog tetap ada
+  // karena _showForgotPasswordDialog masih dipanggil oleh _buildMenuItem
+  // dan _showLogoutDialog dipanggil oleh GestureDetector Logout Button.
+  // Jadi, fungsi ini tidak perlu dihapus, hanya panggilannya saja yang dihilangkan.
+
   void _showForgotPasswordDialog() {
     showDialog(
       context: context,
@@ -314,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        content: const Text('Apakah Anda yakin ingin logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

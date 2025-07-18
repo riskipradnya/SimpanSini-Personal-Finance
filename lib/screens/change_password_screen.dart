@@ -96,7 +96,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const Expanded(
                 child: Text(
-                  'Change Password',
+                  'Ubah Password',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.black,
@@ -123,7 +123,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     children: [
                       const SizedBox(height: 20),
                       const Text(
-                        'Change your password to keep your account secure.',
+                        'Ubah password Anda untuk menjaga keamanan akun Anda',
                         style: TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                       const SizedBox(height: 32),
@@ -132,7 +132,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         controller: _currentPasswordController,
                         obscureText: _obscureCurrentPassword,
                         decoration: InputDecoration(
-                          labelText: 'Current Password',
+                          labelText: 'Password Sekarang',
                           border: const OutlineInputBorder(),
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
@@ -151,7 +151,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter current password';
+                            return 'Silakan masukkan password saat ini';
                           }
                           return null;
                         },
@@ -162,7 +162,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         controller: _newPasswordController,
                         obscureText: _obscureNewPassword,
                         decoration: InputDecoration(
-                          labelText: 'New Password',
+                          labelText: 'Password Baru',
                           border: const OutlineInputBorder(),
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
@@ -180,10 +180,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter new password';
+                            return 'Silakan masukkan password baru';
                           }
                           if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
+                            return 'Password terdiri dari minimal 6 karakter';
                           }
                           return null;
                         },
@@ -194,7 +194,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         controller: _confirmPasswordController,
                         obscureText: _obscureConfirmPassword,
                         decoration: InputDecoration(
-                          labelText: 'Confirm New Password',
+                          labelText: 'Konfirmasi Password Baru',
                           border: const OutlineInputBorder(),
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
@@ -213,10 +213,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please confirm new password';
+                            return 'Tolong Konfirmasi Password Baru';
                           }
                           if (value != _newPasswordController.text) {
-                            return 'Passwords do not match';
+                            return 'Kata sandi tidak cocok';
                           }
                           return null;
                         },
@@ -229,7 +229,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _changePassword,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6C63FF),
+                            backgroundColor: const Color(0xFF3A4276),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -239,7 +239,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   color: Colors.white,
                                 )
                               : const Text(
-                                  'Change Password',
+                                  'Ubah Password',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
