@@ -2,7 +2,7 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart'; // Add this import
+import 'package:flutter/scheduler.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/auth_service.dart'; // <-- IMPORT AuthService
 
@@ -129,20 +129,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // UBAH INI DARI CrossAxisAlignment.start MENJADI CrossAxisAlignment.center
+            crossAxisAlignment: CrossAxisAlignment.center, // <-- PERUBAHAN DI SINI
             children: [
-              Text(
-                'Buat Account',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+              // Untuk judul dan sub-judul, jika Anda ingin mereka tetap rata kiri,
+              // Anda bisa membungkusnya dalam Align atau SizedBox.expand dan mengatur alignment.
+              // Atau, jika Anda ingin semuanya di tengah, biarkan saja.
+              // Untuk saat ini, kita akan membungkusnya agar tetap rata kiri.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Buat Account',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Lorem ipsum dolor sit amet, consectetur',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Mulai perjalanan finansial Anda dengan membuat akun di SimpanSini',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                ),
               ),
               const SizedBox(height: 30),
 
@@ -161,12 +172,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 20),
 
-              Text(
-                'Password',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Password',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -246,36 +260,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 30),
 
-              // Sisa UI tidak berubah
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: Text(
-                      'Or Sign Up with',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                ],
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialButton(FontAwesomeIcons.google, onPressed: () {}),
-                  const SizedBox(width: 20),
-                  _socialButton(FontAwesomeIcons.apple, onPressed: () {}),
-                  const SizedBox(width: 20),
-                  _socialButton(FontAwesomeIcons.facebookF, onPressed: () {}),
-                ],
-              ),
-              const SizedBox(height: 30),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: RichText(
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.center, // <-- INI SUDAH BENAR, tapi butuh parent yang align center
                   text: TextSpan(
                     style: TextStyle(
                       color: Colors.grey[600],

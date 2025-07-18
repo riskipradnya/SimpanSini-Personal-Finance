@@ -149,7 +149,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Lorem ipsum dolor sit amet, consectetur',
+                'Kelola keuangan pribadi Anda dengan mudah dan rapi bersama SimpanSini',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
@@ -335,31 +335,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: Text(
-                      'Or Sign In with',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                ],
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialButton(FontAwesomeIcons.google, onPressed: () {}),
-                  const SizedBox(width: 20),
-                  _socialButton(FontAwesomeIcons.apple, onPressed: () {}),
-                  const SizedBox(width: 20),
-                  _socialButton(FontAwesomeIcons.facebookF, onPressed: () {}),
-                ],
-              ),
+             
             ],
           ),
         ),
@@ -367,18 +343,5 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _socialButton(IconData icon, {required VoidCallback onPressed}) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: FaIcon(icon, color: Colors.grey[800], size: 24),
-      ),
-    );
-  }
+ 
 }
