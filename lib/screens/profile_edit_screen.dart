@@ -253,30 +253,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         ),
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      // const SizedBox(height: 32), // DIHAPUS
-                      // SizedBox( // DIHAPUS
-                      //   width: double.infinity, // DIHAPUS
-                      //   height: 50, // DIHAPUS
-                      //   child: ElevatedButton( // DIHAPUS
-                      //     onPressed: _isLoading ? null : _saveProfile, // DIHAPUS
-                      //     style: ElevatedButton.styleFrom( // DIHAPUS
-                      //       backgroundColor: const Color(0xFF6C63FF), // DIHAPUS
-                      //       shape: RoundedRectangleBorder( // DIHAPUS
-                      //         borderRadius: BorderRadius.circular(8), // DIHAPUS
-                      //       ), // DIHAPUS
-                      //     ), // DIHAPUS
-                      //     child: _isLoading // DIHAPUS
-                      //         ? const CircularProgressIndicator(color: Colors.white) // DIHAPUS
-                      //         : const Text( // DIHAPUS
-                      //             'Simpan Perubahan', // DIHAPUS
-                      //             style: TextStyle( // DIHAPUS
-                      //               fontSize: 16, // DIHAPUS
-                      //               fontWeight: FontWeight.w600, // DIHAPUS
-                      //               color: Colors.white, // DIHAPUS
-                      //             ), // DIHAPUS
-                      //           ), // DIHAPUS
-                      //   ), // DIHAPUS
-                      // ), // DIHAPUS
+
                       const SizedBox(height: 60), // Beri sedikit padding bawah
                     ],
                   ),

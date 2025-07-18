@@ -4,12 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  // Ganti URL ini saat Anda sudah hosting
-  // Untuk tes lokal, ganti dengan IP Address komputer Anda
-  // PASTIKAN INI ADALAH IP LOKAL KOMPUTER ANDA, BUKAN 'localhost'
-  // Jika Anda menjalankan di emulator Android, '10.0.2.2' adalah IP untuk localhost.
-  // Jika Anda menjalankan di iOS simulator atau perangkat fisik, gunakan IP LAN komputer Anda (contoh: '192.168.1.XX')
-  final String _baseUrl = "http://192.168.117.42/api_keuangan"; // <-- GANTI DENGAN IP ANDA YANG TEPAT!
+
+  final String _baseUrl = "http://192.168.117.42/api_keuangan"; 
 
   // Fungsi untuk Registrasi (CREATE)
   Future<Map<String, dynamic>> signUp(

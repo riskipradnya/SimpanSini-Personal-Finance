@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:io'; // Perlu import ini jika menggunakan Image.file
+import 'dart:io'; 
 import '../models/user_model.dart';
 import '../database/auth_service.dart';
-import 'main_screen.dart'; // Pastikan ini diimpor jika diperlukan untuk navigasi
+import 'main_screen.dart'; 
 import 'sign_in_screen.dart';
-import 'profile_edit_screen.dart'; // Import ProfileEditScreenWrapper
-import 'change_password_screen.dart'; // Import ChangePasswordScreenWrapper
+import 'profile_edit_screen.dart'; 
+import 'change_password_screen.dart'; 
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -67,10 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _triggerHomeScreenRefresh() {
     // Simple refresh mechanism without finding ancestor state
     try {
-      // You can implement a different approach here, such as:
-      // 1. Using a global event bus
-      // 2. Using Provider/Riverpod state management
-      // 3. Or simply remove this call if not critical
+
       print('Profile updated - home screen refresh triggered');
     } catch (e) {
       print('Error triggering refresh: $e');
@@ -186,15 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             title: 'Your Profile',
                             onTap: _navigateToEditProfile,
                           ),
-                          // const SizedBox(height: 8), // DIHAPUS
-                          // _buildMenuItem( // DIHAPUS
-                          //   icon: Icons.history, // DIHAPUS
-                          //   title: 'History Transaction', // DIHAPUS
-                          //   onTap: () { // DIHAPUS
-                          //     // Navigate to transaction history // DIHAPUS
-                          //     _showSnackBar('History Transaction clicked'); // DIHAPUS
-                          //   }, // DIHAPUS
-                          // ), // DIHAPUS
+ 
                           const SizedBox(height: 32),
 
                           // Security Section
@@ -288,10 +277,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Fungsi _showForgotPasswordDialog dan _showLogoutDialog tetap ada
-  // karena _showForgotPasswordDialog masih dipanggil oleh _buildMenuItem
-  // dan _showLogoutDialog dipanggil oleh GestureDetector Logout Button.
-  // Jadi, fungsi ini tidak perlu dihapus, hanya panggilannya saja yang dihilangkan.
 
   void _showForgotPasswordDialog() {
     showDialog(

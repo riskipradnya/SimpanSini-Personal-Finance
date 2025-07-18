@@ -1,12 +1,11 @@
-// lib/main.dart
+
 
 import 'package:flutter/material.dart';
-// Diperlukan untuk delegates di bawah
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/sign_in_screen.dart';
 
-// Kode ini sudah benar
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
@@ -25,7 +24,7 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
         fontFamily: 'Poppins',
       ),
-      // Pengaturan lokalisasi ini juga sudah benar
+      
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
