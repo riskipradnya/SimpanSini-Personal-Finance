@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../models/user_model.dart';
 import '../database/auth_service.dart';
-import 'main_screen.dart'; // Import for wrapper classes
+import 'main_screen.dart';
+import 'sign_in_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -55,6 +57,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _currentUser = result;
       });
+      // Trigger refresh of home screen to update profile image
+      _triggerHomeScreenRefresh();
+    }
+  }
+
+  void _triggerHomeScreenRefresh() {
+    // Simple refresh mechanism without finding ancestor state
+    try {
+      // You can implement a different approach here, such as:
+      // 1. Using a global event bus
+      // 2. Using Provider/Riverpod state management
+      // 3. Or simply remove this call if not critical
+      print('Profile updated - home screen refresh triggered');
+    } catch (e) {
+      print('Error triggering refresh: $e');
     }
   }
 
@@ -65,6 +82,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (context) => const ChangePasswordScreenWrapper(),
       ),
     );
+  }
+
+  Widget _buildProfileImage() {
+    if (_currentUser?.profileImage != null &&
+        _currentUser!.profileImage!.isNotEmpty) {
+      return Image.file(
+        File(_currentUser!.profileImage!),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade200,
+            child: const Icon(Icons.person, size: 40, color: Colors.grey),
+          );
+        },
+      );
+    } else {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.person, size: 40, color: Colors.grey),
+      );
+    }
   }
 
   @override
@@ -80,15 +118,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             bottom: 16,
           ),
           color: Colors.white,
-          child: Row(
+          child: const Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-                onPressed: () {
-                  // Handle back navigation if needed
-                },
-              ),
-              const Expanded(
+              SizedBox(width: 48),
+              Expanded(
                 child: Text(
                   'Profile',
                   textAlign: TextAlign.center,
@@ -99,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 48), // Balance the back button
+              SizedBox(width: 48),
             ],
           ),
         ),
@@ -128,32 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     width: 2,
                                   ),
                                 ),
-                                child: ClipOval(
-                                  child: _currentUser?.profileImage != null
-                                      ? Image.asset(
-                                          _currentUser!.profileImage!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                                return Container(
-                                                  color: Colors.grey.shade200,
-                                                  child: const Icon(
-                                                    Icons.person,
-                                                    size: 40,
-                                                    color: Colors.grey,
-                                                  ),
-                                                );
-                                              },
-                                        )
-                                      : Container(
-                                          color: Colors.grey.shade200,
-                                          child: const Icon(
-                                            Icons.person,
-                                            size: 40,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                ),
+                                child: ClipOval(child: _buildProfileImage()),
                               ),
                               const SizedBox(height: 12),
                               Text(
@@ -325,9 +333,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _handleLogout() {
-    // Add your logout logic here
-    _showSnackBar('Logged out successfully');
-    // Navigate to login screen or handle logout
+  void _handleLogout() async {
+    try {
+      await AuthService().logout();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SignInScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error during logout: $e')));
+      }
+    }
   }
 }

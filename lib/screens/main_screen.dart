@@ -188,7 +188,10 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         children: <Widget>[
-          HomeScreen(refreshNotifier: _refreshNotifier),
+          HomeScreen(
+            refreshNotifier: _refreshNotifier,
+            onViewAllPressed: () => navigateToScreen(1),
+          ),
           StatistikScreen(refreshNotifier: _refreshNotifier),
           WishlistScreen(refreshNotifier: _refreshNotifier),
           const ProfileScreen(),

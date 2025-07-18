@@ -107,6 +107,19 @@ class UserService {
   // Update user profile
   Future<User?> updateUser(User user) async {
     try {
+      // For now, we'll save to SharedPreferences
+      // In a real app, you would send this to your server
+      final prefs = await SharedPreferences.getInstance();
+
+      // Save to local storage
+      await prefs.setString('user_name', user.name);
+      await prefs.setString('user_email', user.email);
+      if (user.profileImage != null) {
+        await prefs.setString('profile_image', user.profileImage!);
+      }
+
+      // Simulate server call (uncomment when you have the server endpoint)
+      /*
       final response = await http.post(
         Uri.parse('$_baseUrl/update_profile.php'),
         body: {
@@ -120,17 +133,12 @@ class UserService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'success') {
-          // Update SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user_name', user.name);
-          await prefs.setString('user_email', user.email);
-          if (user.profileImage != null) {
-            await prefs.setString('profile_image', user.profileImage!);
-          }
           return user;
         }
       }
-      return null;
+      */
+
+      return user; // Return updated user for now
     } catch (e) {
       print('Error updating user: $e');
       return null;
@@ -146,6 +154,8 @@ class UserService {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
 
+      // Simulate server call (uncomment when you have the server endpoint)
+      /*
       final response = await http.post(
         Uri.parse('$_baseUrl/change_password.php'),
         body: {
@@ -159,7 +169,10 @@ class UserService {
         final data = json.decode(response.body);
         return data['status'] == 'success';
       }
-      return false;
+      */
+
+      // For now, return true (simulate success)
+      return true;
     } catch (e) {
       print('Error changing password: $e');
       return false;

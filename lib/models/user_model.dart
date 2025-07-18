@@ -52,4 +52,16 @@ class User {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  // Add toJson method
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nama_lengkap': namaLengkap,
+      'email': email,
+      'profile_image': profileImage,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
 }

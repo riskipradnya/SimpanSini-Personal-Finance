@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../models/user_model.dart';
 import '../database/auth_service.dart'; // Ganti 'auth_service' dengan nama file service Anda
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final User user;
@@ -68,9 +69,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     try {
       String? profileImagePath = widget.user.profileImage;
       if (_imageFile != null) {
-        // Logika untuk mengunggah file ke server Anda akan ada di sini.
-        // Untuk saat ini, kita hanya menggunakan path lokalnya.
         profileImagePath = _imageFile!.path;
+        print('Selected image path: $profileImagePath'); // Debug log
       }
 
       final updatedUser = widget.user.copyWith(
@@ -80,10 +80,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         updatedAt: DateTime.now(),
       );
 
-      // Pastikan nama service dan method-nya sesuai
+      print('Updating user: ${updatedUser.toJson()}'); // Debug log
+
       final result = await UserService().updateUser(updatedUser);
 
-      if (!mounted) return; // Pemeriksaan mounted
+      if (!mounted) return;
 
       if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,6 +93,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             backgroundColor: Colors.green,
           ),
         );
+        
+        // Force refresh of SharedPreferences
+        await _saveToSharedPreferences(result);
+        
         Navigator.pop(context, result);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,6 +107,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         );
       }
     } catch (e) {
+      print('Error in _saveProfile: $e'); // Debug log
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -116,6 +122,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _saveToSharedPreferences(User user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_name', user.name);
+      await prefs.setString('user_email', user.email);
+      if (user.profileImage != null) {
+        await prefs.setString('profile_image', user.profileImage!);
+      }
+      print('Saved to SharedPreferences: ${user.name}, ${user.profileImage}'); // Debug log
+    } catch (e) {
+      print('Error saving to SharedPreferences: $e');
     }
   }
 
