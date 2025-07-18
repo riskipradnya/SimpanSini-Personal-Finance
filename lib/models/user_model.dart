@@ -4,8 +4,8 @@ class User {
   final int id;
   final String name;
   final String email;
-  final String? profileImage; // Ini akan menyimpan path gambar
-  final String password; // Ini untuk simulasi local, TIDAK AMAN untuk produksi
+  final String? profileImage; 
+  final String password; 
 
   User({
     required this.id,
@@ -18,10 +18,10 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: int.parse(json['id'].toString()),
-      name: json['nama_lengkap'], // Sesuaikan dengan key 'nama_lengkap' dari AuthService
+      name: json['nama_lengkap'], 
       email: json['email'],
-      profileImage: json['profile_image'], // Asumsi key ini ada di data user
-      password: json['password'], // Asumsi password ada di data (sekali lagi, TIDAK AMAN)
+      profileImage: json['profile_image'], 
+      password: json['password'], 
     );
   }
 
@@ -30,7 +30,7 @@ class User {
       'id': id,
       'name': name,
       'email': email,
-      'profile_image': profileImage, // Sesuaikan dengan key jika ada
+      'profile_image': profileImage, 
       'password': password,
     };
   }

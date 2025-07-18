@@ -8,7 +8,7 @@ import 'dart:io'; // Import ini untuk File
 
 class UserService {
   // Ganti dengan URL dasar API PHP Anda
-  static const String _baseUrl = 'http://10.0.2.2/api_keuangan'; // UNTUK EMULATOR ANDROID: Gunakan 10.0.2.2
+  static const String _baseUrl = 'http://192.168.159.42/api_keuangan'; // UNTUK EMULATOR ANDROID: Gunakan 10.0.2.2
                                                                 // UNTUK REAL DEVICE: Gunakan IP lokal komputer Anda (misal: http://192.168.1.x/api_keuangan)
                                                                 // UNTUK WEB/DESKTOP: http://localhost/api_keuangan
 

@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final String _baseUrl =
-      "http://localhost/api_keuangan"; // <-- GANTI DENGAN IP ANDA
+      "http://192.168.159.42/api_keuangan"; // <-- GANTI DENGAN IP ANDA
 
   Future<Map<String, dynamic>> signUp(
     String name,
