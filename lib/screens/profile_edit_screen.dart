@@ -1,259 +1,265 @@
-// // lib/screens/profile_edit_screen.dart
-// import 'package:flutter/material.dart';
-// import 'dart:io'; // <-- TAMBAHKAN INI UNTUK File
-// import '../models/user_model.dart';
-// import '../database/user_service.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../models/user_model.dart';
+import '../database/auth_service.dart'; // Ganti 'auth_service' dengan nama file service Anda
+import 'package:shared_preferences/shared_preferences.dart';
 
-// class ProfileEditScreen extends StatefulWidget {
-//   final User user;
+class ProfileEditScreen extends StatefulWidget {
+  final User user;
 
-//   const ProfileEditScreen({super.key, required this.user});
+  const ProfileEditScreen({super.key, required this.user});
 
-//   @override
-//   State<ProfileEditScreen> createState() => _ProfileEditScreenState();
-// }
+  @override
+  State<ProfileEditScreen> createState() => _ProfileEditScreenState();
+}
 
-// class _ProfileEditScreenState extends State<ProfileEditScreen> {
-//   final _formKey = GlobalKey<FormState>();
-//   late TextEditingController _nameController;
-//   late TextEditingController _emailController;
-//   bool _isLoading = false;
+class _ProfileEditScreenState extends State<ProfileEditScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  bool _isLoading = false;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _nameController = TextEditingController(text: widget.user.name);
-//     _emailController = TextEditingController(text: widget.user.email);
-//   }
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.user.name);
+    _emailController = TextEditingController(text: widget.user.email);
+    // Jika ada gambar profil yang sudah ada, inisialisasi _imageFile dengan path tersebut
+    if (widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty) {
+      _imageFile = File(widget.user.profileImage!);
+    }
+  }
 
-//   @override
-//   void dispose() {
-//     _nameController.dispose();
-//     _emailController.dispose();
-//     super.dispose();
-//   }
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
 
-//   Future<void> _saveProfile() async {
-//     if (!_formKey.currentState!.validate()) return;
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 400,
+        maxHeight: 400,
+        imageQuality: 80,
+      );
 
-//     setState(() {
-//       _isLoading = true;
-//     });
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+        // LANGSUNG SIMPAN FOTO SETELAH DIPILIH
+        await _saveProfile(isImageOnly: true); // Panggil _saveProfile
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saat memilih gambar: $e')),
+        );
+      }
+    }
+  }
 
-//     try {
-//       final updatedUser = widget.user.copyWith(
-//         name: _nameController.text.trim(),
-//         email: _emailController.text.trim(),
-//         // profileImage tidak diupdate di sini, karena ada fungsi terpisah
-//       );
+  // Tambahkan parameter opsional untuk menandakan jika hanya gambar yang disimpan
+  Future<void> _saveProfile({bool isImageOnly = false}) async {
+    setState(() {
+      _isLoading = true;
+    });
 
-//       final result = await UserService().updateUser(updatedUser);
+    try {
+      String? profileImagePath = widget.user.profileImage;
+      if (_imageFile != null) {
+        profileImagePath = _imageFile!.path;
+        print('Selected image path: $profileImagePath'); // Debug log
+      }
 
-//       if (mounted) {
-//         if (result != null) {
-//           ScaffoldMessenger.of(context).showSnackBar(
-//             const SnackBar(
-//               content: Text('Profile updated successfully'),
-//               backgroundColor: Colors.green,
-//             ),
-//           );
-//           Navigator.pop(context, result); // Mengirimkan user yang telah diupdate
-//         } else {
-//           ScaffoldMessenger.of(context).showSnackBar(
-//             const SnackBar(
-//               content: Text('Failed to update profile'),
-//               backgroundColor: Colors.red,
-//             ),
-//           );
-//         }
-//       }
-//     } catch (e) {
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//             content: Text('Error updating profile: $e'),
-//             backgroundColor: Colors.red,
-//           ),
-//         );
-//       }
-//     } finally {
-//       if (mounted) {
-//         setState(() {
-//           _isLoading = false;
-//         });
-//       }
-//     }
-//   }
+      final updatedUser = widget.user.copyWith(
+        // Nama dan email tetap dari data user lama karena readOnly
+        profileImage: profileImagePath,
+        updatedAt: DateTime.now(),
+      );
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: Column(
-//         children: [
-//           // Custom App Bar
-//           Container(
-//             padding: const EdgeInsets.only(
-//               top: 50,
-//               left: 16,
-//               right: 16,
-//               bottom: 16,
-//             ),
-//             color: Colors.white,
-//             child: Row(
-//               children: [
-//                 IconButton(
-//                   icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-//                   onPressed: () => Navigator.pop(context, widget.user), // Kembali dengan user original jika tidak ada update
-//                 ),
-//                 const Expanded(
-//                   child: Text(
-//                     'Edit Profile',
-//                     textAlign: TextAlign.center,
-//                     style: TextStyle(
-//                       color: Colors.black,
-//                       fontSize: 18,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(width: 48),
-//               ],
-//             ),
-//           ),
-//           // Main Content
-//           Expanded(
-//             child: Container(
-//               color: Colors.white,
-//               child: SingleChildScrollView(
-//                 child: Padding(
-//                   padding: const EdgeInsets.all(16.0),
-//                   child: Form(
-//                     key: _formKey,
-//                     child: Column(
-//                       children: [
-//                         const SizedBox(height: 20),
-//                         // Profile Image
-//                         Container(
-//                           width: 100,
-//                           height: 100,
-//                           decoration: BoxDecoration(
-//                             shape: BoxShape.circle,
-//                             border: Border.all(
-//                               color: Colors.grey.shade300,
-//                               width: 2,
-//                             ),
-//                           ),
-//                           child: ClipOval(
-//                             child: widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
-//                                 ? Image.file( // UBAH DARI Image.asset KE Image.file
-//                                     File(widget.user.profileImage!), // Menggunakan File dari path
-//                                     fit: BoxFit.cover,
-//                                     errorBuilder: (context, error, stackTrace) {
-//                                       return Container(
-//                                         color: Colors.grey.shade200,
-//                                         child: const Icon(
-//                                           Icons.person,
-//                                           size: 50,
-//                                           color: Colors.grey,
-//                                         ),
-//                                       );
-//                                     },
-//                                   )
-//                                 : Container(
-//                                     color: Colors.grey.shade200,
-//                                     child: const Icon(
-//                                       Icons.person,
-//                                       size: 50,
-//                                       color: Colors.grey,
-//                                     ),
-//                                   ),
-//                           ),
-//                         ),
-//                         const SizedBox(height: 16),
-//                         TextButton(
-//                           onPressed: () {
-//                             // Untuk saat ini, biarkan ini menampilkan snackbar atau Anda bisa mengarahkan ke ProfileViewScreen untuk ganti foto
-//                             // Atau implementasikan _pickImage di sini juga
-//                             ScaffoldMessenger.of(context).showSnackBar(
-//                               const SnackBar(
-//                                 content: Text('Change photo feature available in Your Profile page'),
-//                               ),
-//                             );
-//                           },
-//                           child: const Text('Change Photo'),
-//                         ),
-//                         const SizedBox(height: 32),
-//                         // Name Field
-//                         TextFormField(
-//                           controller: _nameController,
-//                           decoration: const InputDecoration(
-//                             labelText: 'Full Name',
-//                             border: OutlineInputBorder(),
-//                             prefixIcon: Icon(Icons.person_outline),
-//                           ),
-//                           validator: (value) {
-//                             if (value == null || value.trim().isEmpty) {
-//                               return 'Please enter your name';
-//                             }
-//                             return null;
-//                           },
-//                         ),
-//                         const SizedBox(height: 16),
-//                         // Email Field
-//                         TextFormField(
-//                           controller: _emailController,
-//                           decoration: const InputDecoration(
-//                             labelText: 'Email',
-//                             border: OutlineInputBorder(),
-//                             prefixIcon: Icon(Icons.email_outlined),
-//                           ),
-//                           keyboardType: TextInputType.emailAddress,
-//                           validator: (value) {
-//                             if (value == null || value.trim().isEmpty) {
-//                               return 'Please enter your email';
-//                             }
-//                             if (!value.contains('@')) {
-//                               return 'Please enter a valid email';
-//                             }
-//                             return null;
-//                           },
-//                         ),
-//                         const SizedBox(height: 32),
-//                         // Save Button
-//                         SizedBox(
-//                           width: double.infinity,
-//                           height: 50,
-//                           child: ElevatedButton(
-//                             onPressed: _isLoading ? null : _saveProfile,
-//                             style: ElevatedButton.styleFrom(
-//                               backgroundColor: const Color(0xFF6C63FF),
-//                               shape: RoundedRectangleBorder(
-//                                 borderRadius: BorderRadius.circular(8),
-//                               ),
-//                             ),
-//                             child: _isLoading
-//                                 ? const CircularProgressIndicator(
-//                                     color: Colors.white,
-//                                   )
-//                                 : const Text(
-//                                     'Save Changes',
-//                                     style: TextStyle(
-//                                       fontSize: 16,
-//                                       fontWeight: FontWeight.w600,
-//                                       color: Colors.white,
-//                                     ),
-//                                   ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+      print('Updating user: ${updatedUser.toJson()}'); // Debug log
+
+      final result = await UserService().updateUser(updatedUser); // Panggil fungsi update
+
+      if (!mounted) return;
+
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil diperbarui'), // Pesan lebih spesifik
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Force refresh of SharedPreferences
+        await _saveToSharedPreferences(result);
+        
+        // Jika hanya mengubah gambar, tetap di halaman ini.
+        // Jika ada perubahan lain dan Anda ingin kembali, baru panggil pop.
+        // Dalam kasus ini, karena hanya gambar yang bisa diubah dan langsung disimpan,
+        // kita tidak perlu pop otomatis. Biarkan user kembali secara manual.
+        // Navigator.pop(context, result); // DIHAPUS agar tidak langsung keluar halaman
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memperbarui foto profil'), // Pesan lebih spesifik
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error in _saveProfile: $e'); // Debug log
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error memperbarui foto profil: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveToSharedPreferences(User user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_name', user.name);
+      await prefs.setString('user_email', user.email);
+      if (user.profileImage != null) {
+        await prefs.setString('profile_image', user.profileImage!);
+      }
+      print('Saved to SharedPreferences: ${user.name}, ${user.profileImage}'); // Debug log
+    } catch (e) {
+      print('Error saving to SharedPreferences: $e');
+    }
+  }
+
+  Widget _buildProfileImage() {
+    // Jika ada file gambar baru yang dipilih dari galeri
+    if (_imageFile != null) {
+      return Image.file(
+        _imageFile!,
+        fit: BoxFit.cover,
+        width: 100,
+        height: 100,
+      );
+    }
+    // Jika ada gambar profil dari data user (dari SharedPrefs)
+    if (widget.user.profileImage != null &&
+        widget.user.profileImage!.isNotEmpty) {
+      // PENTING: Jika profileImage adalah URL dari internet, gunakan Image.network.
+      // Jika ini adalah path file lokal, gunakan Image.file.
+      // Asumsi saat ini adalah path lokal.
+      // Cek apakah file benar-benar ada sebelum mencoba memuatnya
+      if (File(widget.user.profileImage!).existsSync()) {
+        return Image.file(
+          File(widget.user.profileImage!),
+          fit: BoxFit.cover,
+          width: 100,
+          height: 100,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback jika ada error saat memuat file
+            return _buildDefaultAvatar();
+          },
+        );
+      }
+    }
+    // Jika tidak ada gambar sama sekali atau file tidak ditemukan
+    return _buildDefaultAvatar();
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.person, size: 50, color: Colors.grey),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: _isLoading // Tampilkan loading indicator di tengah halaman jika sedang memuat
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: _pickImage, // Ini tetap bisa diklik untuk ganti foto
+                        child: ClipOval(child: _buildProfileImage()),
+                      ),
+                      TextButton(
+                        onPressed: _pickImage, // Tombol "Ganti Foto"
+                        child: const Text('Ganti Foto'),
+                      ),
+                      const SizedBox(height: 32),
+                      TextFormField(
+                        controller: _nameController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Lengkap',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+
+                      const SizedBox(height: 60), // Beri sedikit padding bawah
+                    ],
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+}

@@ -4,50 +4,62 @@ class User {
   final int id;
   final String name;
   final String email;
-  final String? profileImage; // Ini akan menyimpan path gambar
-  final String password; // Ini untuk simulasi local, TIDAK AMAN untuk produksi
+  final String? profileImage;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   User({
     required this.id,
     required this.name,
     required this.email,
     this.profileImage,
-    required this.password,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: int.parse(json['id'].toString()),
-      name: json['nama_lengkap'], // Sesuaikan dengan key 'nama_lengkap' dari AuthService
+      name: json['nama_lengkap'], // pastikan API mengirim 'nama_lengkap'
       email: json['email'],
-      profileImage: json['profile_image'], // Asumsi key ini ada di data user
-      password: json['password'], // Asumsi password ada di data (sekali lagi, TIDAK AMAN)
+      profileImage: json['profile_image'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'profile_image': profileImage, // Sesuaikan dengan key jika ada
-      'password': password,
-    };
-  }
-
+  // copyWith method
   User copyWith({
     int? id,
     String? name,
     String? email,
     String? profileImage,
-    String? password,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
       profileImage: profileImage ?? this.profileImage,
-      password: password ?? this.password,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  // toJson method
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nama_lengkap': name,
+      'email': email,
+      'profile_image': profileImage,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
   }
 }

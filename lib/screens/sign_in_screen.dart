@@ -140,7 +140,7 @@ class _SignInScreenState extends State<SignInScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hi, Welcome Back! 👋',
+                'Hai, Selamat Datang Kembali! 👋',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -149,12 +149,12 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Lorem ipsum dolor sit amet, consectetur',
+                'Kelola keuangan pribadi Anda dengan mudah dan rapi bersama SimpanSini',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 30),
               Text(
-                'Email Address',
+                'Alamat Email',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -166,7 +166,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 controller: _emailController, // Hubungkan controller
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: 'Enter your email address',
+                  hintText: 'Masukkan alamat email Anda',
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -202,7 +202,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 controller: _passwordController, // Hubungkan controller
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
-                  hintText: 'Enter your password',
+                  hintText: 'Masukkan password anda',
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -256,7 +256,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       const Text(
-                        'Remember Me',
+                        'Ingat Saya',
                         style: TextStyle(fontSize: 14, color: Colors.black54),
                       ),
                     ],
@@ -264,7 +264,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   TextButton(
                     onPressed: () {},
                     child: const Text(
-                      'Forgot Password',
+                      'Lupa Kata Sandi',
                       style: TextStyle(
                         fontSize: 14,
                         color: Color(0xFF1A237E),
@@ -312,7 +312,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Don't have an account? ",
+                    "Belum punya akun? ",
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                   GestureDetector(
@@ -335,31 +335,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: Text(
-                      'Or Sign In with',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                ],
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialButton(FontAwesomeIcons.google, onPressed: () {}),
-                  const SizedBox(width: 20),
-                  _socialButton(FontAwesomeIcons.apple, onPressed: () {}),
-                  const SizedBox(width: 20),
-                  _socialButton(FontAwesomeIcons.facebookF, onPressed: () {}),
-                ],
-              ),
+             
             ],
           ),
         ),
@@ -367,18 +343,5 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _socialButton(IconData icon, {required VoidCallback onPressed}) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: FaIcon(icon, color: Colors.grey[800], size: 24),
-      ),
-    );
-  }
+ 
 }

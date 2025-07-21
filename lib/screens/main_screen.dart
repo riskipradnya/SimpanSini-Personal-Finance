@@ -2,12 +2,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/user_model.dart';
 import 'home_screen.dart';
 import 'pemasukan_screen.dart';
 import 'pengeluaran_screen.dart';
 import 'statistik_screen.dart';
 import 'wishlist_screen.dart';
-import 'profil_screen.dart'; // Import ProfileScreen
+import 'profile_screen.dart';
+import 'profile_edit_screen.dart';
+import 'change_password_screen.dart';
+
+// Add wrapper classes for proper navigation
+class ProfileEditScreenWrapper extends StatelessWidget {
+  final User user;
+
+  const ProfileEditScreenWrapper({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: ProfileEditScreen(user: user));
+  }
+}
+
+class ChangePasswordScreenWrapper extends StatelessWidget {
+  const ChangePasswordScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: const ChangePasswordScreen());
+  }
+}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -45,6 +69,14 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = actualIndex;
       _pageController.jumpToPage(actualIndex);
+    });
+  }
+
+  // Add method to navigate to specific screen
+  void navigateToScreen(int index) {
+    setState(() {
+      _selectedIndex = index;
+      _pageController.jumpToPage(index);
     });
   }
 
@@ -93,7 +125,9 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     );
                     if (result == true) {
-                      _refreshNotifier.value++;
+                      // Trigger refresh for all screens
+                      _refreshNotifier.value =
+                          DateTime.now().millisecondsSinceEpoch;
                     }
                   },
                   child: Text(
@@ -123,7 +157,9 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     );
                     if (result == true) {
-                      _refreshNotifier.value++;
+                      // Trigger refresh for all screens
+                      _refreshNotifier.value =
+                          DateTime.now().millisecondsSinceEpoch;
                     }
                   },
                   child: Text(
@@ -154,7 +190,10 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         children: <Widget>[
-          HomeScreen(refreshNotifier: _refreshNotifier),
+          HomeScreen(
+            refreshNotifier: _refreshNotifier,
+            onViewAllPressed: () => navigateToScreen(1),
+          ),
           StatistikScreen(refreshNotifier: _refreshNotifier),
           const Center(child: Text('Add Transaction Placeholder')), // Placeholder untuk FAB
           WishlistScreen(refreshNotifier: _refreshNotifier),
