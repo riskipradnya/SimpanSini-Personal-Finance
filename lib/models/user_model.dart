@@ -1,6 +1,8 @@
+// lib/models/user_model.dart
+
 class User {
   final int id;
-  final String namaLengkap;
+  final String name;
   final String email;
   final String? profileImage;
   final DateTime? createdAt;
@@ -8,18 +10,17 @@ class User {
 
   User({
     required this.id,
-    required this.namaLengkap,
+    required this.name,
     required this.email,
     this.profileImage,
     this.createdAt,
     this.updatedAt,
   });
 
-  // Factory constructor untuk membuat instance User dari map (JSON)
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: int.parse(json['id'].toString()), // Konversi ke int dengan aman
-      namaLengkap: json['nama_lengkap'],
+      id: int.parse(json['id'].toString()),
+      name: json['nama_lengkap'], // pastikan API mengirim 'nama_lengkap'
       email: json['email'],
       profileImage: json['profile_image'],
       createdAt: json['created_at'] != null
@@ -31,10 +32,7 @@ class User {
     );
   }
 
-  // Add convenience getters
-  String get name => namaLengkap;
-
-  // Add copyWith method
+  // copyWith method
   User copyWith({
     int? id,
     String? name,
@@ -45,7 +43,7 @@ class User {
   }) {
     return User(
       id: id ?? this.id,
-      namaLengkap: name ?? this.namaLengkap,
+      name: name ?? this.name,
       email: email ?? this.email,
       profileImage: profileImage ?? this.profileImage,
       createdAt: createdAt ?? this.createdAt,
@@ -53,11 +51,11 @@ class User {
     );
   }
 
-  // Add toJson method
+  // toJson method
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'nama_lengkap': namaLengkap,
+      'nama_lengkap': name,
       'email': email,
       'profile_image': profileImage,
       'created_at': createdAt?.toIso8601String(),

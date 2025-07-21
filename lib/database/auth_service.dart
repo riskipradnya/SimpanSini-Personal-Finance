@@ -1,13 +1,13 @@
+// lib/database/auth_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class AuthService {
+  final String _baseUrl =
+      "http://localhost/api_keuangan"; // <-- GANTI DENGAN IP ANDA
 
-  final String _baseUrl = "http://192.168.117.42/api_keuangan"; 
-
-  // Fungsi untuk Registrasi (CREATE)
   Future<Map<String, dynamic>> signUp(
       String name,
       String email,
@@ -25,7 +25,6 @@ class AuthService {
     }
   }
 
-  // Fungsi untuk Login (READ)
   Future<Map<String, dynamic>> signIn(String email, String password) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/login.php'),
@@ -35,9 +34,11 @@ class AuthService {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
 
-      // If login is successful, save user data to SharedPreferences
       if (data['status'] == 'success') {
-        await _saveUserData(data['data']);
+        // PENTING: Pastikan data['data'] mengandung 'password' dan 'profile_image'
+        // Jika API Anda tidak mengembalikan password, Anda tidak bisa menyimpannya.
+        // Jika API Anda tidak mengembalikan profile_image, Anda bisa mengosongkannya.
+        await _saveUserData(data['data'], password); // Kirim password ke _saveUserData
       }
 
       return data;
@@ -47,11 +48,14 @@ class AuthService {
   }
 
   // Save user data to SharedPreferences
-  Future<void> _saveUserData(Map<String, dynamic> userData) async {
+  // Tambahkan parameter password untuk disimpan di SharedPreferences
+  Future<void> _saveUserData(Map<String, dynamic> userData, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('user_id', int.parse(userData['id'].toString()));
     await prefs.setString('user_name', userData['nama_lengkap']);
     await prefs.setString('user_email', userData['email']);
+    await prefs.setString('user_password', password); // Simpan password yang dimasukkan
+    await prefs.setString('user_profile_image', userData['profile_image'] ?? ''); // Simpan profile_image jika ada
     await prefs.setBool('is_logged_in', true);
   }
 
@@ -66,6 +70,7 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
+
 }
 
 class UserService {
@@ -180,4 +185,5 @@ class UserService {
       return false;
     }
   }
+
 }
